@@ -58,8 +58,11 @@ class PDTable:
     # Magic methods
     ################################################################
 
-    def __getattr_(self, name):
+    def __getattr__(self, name):
         return self.table[name]
+
+    #def __setattr__(self, name, value):
+    #    pass
 
     def __getitem__(self, key):
         if type(key) == str:
