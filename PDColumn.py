@@ -23,7 +23,7 @@ class PDColumn:
     binary_list = ['_add', '_sub', '_mul', '_div', '_mod', '_concat', \
                    '_or', '_and', '_eq', '_ne', '_lt', '_gt', '_le', '_ge']
     
-    def __init__(self, table=None):
+    def __init__(self, name='Column', table=None):
         """
         Initializes column to be empty. Optional table argument allows
         creator to specify the base table if necessary.
@@ -31,7 +31,8 @@ class PDColumn:
         self.agg = None
         self.unary_op = None
         self.binary_op = None
-        self._table = table
+        self.table = table
+        self.name = name
         self.children = []
 
 
@@ -48,10 +49,30 @@ class PDColumn:
 
     def __str__(self):
         """
-        Returns string representation of this column.
+        Returns string representation of this column (in terms of table+column for users).
         """
         raise NotImplementedError()
 
+    def __repr__(self, level=0):
+        """
+        Returns a string representation of this column (in terms of AST for devs).
+        """
+        s = "\t"*level
+        
+        s += self.name
+        if self.table:
+            s += '(' + str(self.table) + ')'
+        if self.agg:
+            s += ' agg:'+ self.agg
+        if self.unary_op:
+            s += ' unary:'+ self.unary_op
+        if self.binary_op:
+            s += ' binary:'+ self.binary_op
+
+        s += "\n"
+        for child in self.children:
+            s += child.__repr__(level+1)
+        return s
 
     def __unicode__(self):
         """
