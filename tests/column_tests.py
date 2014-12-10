@@ -2,7 +2,7 @@ import unittest
 from PDSQL.PDColumn import PDColumn
 
 class TestUnaryOps(unittest.TestCase):
-    
+
     def setUp(self):
         self.c1 = PDColumn('C1')
         self.c2 = PDColumn('C2')
@@ -17,6 +17,8 @@ class TestUnaryOps(unittest.TestCase):
         c = self.c1.abs()
         self.assertRaises(Exception, c.__abs__)
 
+    def test_repr(self):
+        print repr(self.c1+(self.c2-self.c2.sum()))
 
 if __name__ == '__main__':
     unittest.main()
