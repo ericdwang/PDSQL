@@ -85,9 +85,10 @@ class PDColumn:
             raise Exception('Attempting to assign invalid aggregate function')
     
         else:
-            self.agg = agg
-            setattr(self, agg, True)
-            return self
+            new_col = copy.copy(self)
+            new_col.agg = agg
+            setattr(new_col, agg, True)
+            return new_col
 
     
     def sum(self):
@@ -138,9 +139,10 @@ class PDColumn:
             raise Exception('Attempting to assign invalid unary function')
     
         else:
-            self.unary_op = op
-            setattr(self, op, True)
-            return self
+            new_col = copy.copy(self)
+            new_col.unary_op = op
+            setattr(new_col, op, True)
+            return new_col
 
    
     def __abs__(self):
@@ -197,12 +199,15 @@ class PDColumn:
             raise Exception('Attempting to assign invalid binary function')
     
         else:
-            bin_col = PDColumn()
-            bin_col.binary_op = op
-            setattr(bin_col, op, True)
-            bin_col.children.append(self)
-            bin_col.children.append(other)
-            return bin_col
+            new_col = PDColumn()
+            new_col.binary_op = op
+            setattr(new_col, op, True)
+
+            c1 = copy.copy(self)
+            c2 = copy.copy(other)
+            new_col.children.append(c1)
+            new_col.children.append(c2)
+            return new_col
 
     
     def __add__(self, other):
