@@ -1,4 +1,5 @@
 
+import copy
 import PDTable
 
 class PDColumn:
@@ -20,23 +21,13 @@ class PDColumn:
     # col1 + col2, with the exception of methods like concat which have no
     # raw equivalent.
     binary_list = ['_add', '_sub', '_mul', '_div', '_mod', '_concat', \
-                   '_or', '_and']
+                   '_or', '_and', '_eq', '_ne', '_lt', '_gt', '_le', '_ge']
     
     def __init__(self, table=None):
         """
         Initializes column to be empty. Optional table argument allows
         creator to specify the base table if necessary.
         """
-
-        # Initialize comparison lists
-        # We use lists to allow for multiple comparisons on the same column
-        self._eq = []
-        self._ne = []
-        self._lt = []
-        self._gt = []
-        self._le = []
-        self._ge = []
-
         self.agg = None
         self.unary_op = None
         self.binary_op = None
@@ -68,38 +59,6 @@ class PDColumn:
         """
         raise NotImplementedError()
 
-
-    ################################################################
-    # Magic Methods for comparisons
-    #
-    # More than one at a time is legal, in case you wish to make
-    # multiple comparisons, hence the list formats
-    ################################################################
-
-    def __eq__(self, other):
-        self._eq.append(other)
-        return self
-
-    def __ne__(self, other):
-        self._ne.append(other)
-        return self
-            
-    def __lt__(self, other):
-        self._lt.append(other)
-        return self
-            
-    def __gt__(self, other):
-        self._gt.append(other)
-        return self
-            
-    def __le__(self, other):
-        self._le.append(other)
-        return self
-            
-    def __ge__(self, other):
-        self._ge.append(other)
-        return self
-
             
     ################################################################
     # Aggregation Methods
@@ -113,32 +72,18 @@ class PDColumn:
         '''
         return bool(self.agg)
 
-    
-    #TODO:  Determine if there is a case where this is necessary, instead of
-    #       simply checking if a single variable is set.
-    def _has_member_list(self, l):
-        """
-        Helper function to see if any attributes in a list have been set yet.
-        
-        Returns false if there are none set, and true if there are.
-        """
-        for attr in l:
-            if getattr(self, attr, False):
-                return true
-        
-        return false
-   
-    
     def _set_aggregate(self, agg):
         """
         Helper function to set aggregate function, validating and doing any
         bookkeeping necessary.
         """
-        if self._has_member_list(PDColumn.aggregate_list):
-            #TODO:  Figure out how to deal with separate instances of
-            #       aggregations called on same column.
+        if self.has_aggregate():
             raise Exception('Attempting to assign multiple aggregate functions \
                 to same column')
+        
+        elif op not in PDColumn.aggregate_list:
+            raise Exception('Attempting to assign invalid aggregate function')
+    
         else:
             self.agg = agg
             setattr(self, agg, True)
@@ -185,9 +130,13 @@ class PDColumn:
         Helper function to set unary math ops, validating and doing any
         bookkeeping necessary.
         """
-        if self._has_member_list(PDColumn.unary_list):
-            raise Exception('Attempting to assign multiple math functions \
+        if self.has_unary_op():
+            raise Exception('Attempting to assign multiple unary functions \
                 to same column')
+        
+        elif op not in PDColumn.unary_list:
+            raise Exception('Attempting to assign invalid unary function')
+    
         else:
             self.unary_op = op
             setattr(self, op, True)
@@ -228,7 +177,7 @@ class PDColumn:
     # Invariant: Only one binary op exists, exactly 2 children
     ################################################################
 
-    def is_binary(self):
+    def has_binary(self):
         '''
         Returns true if column has an binary op set. False otherwise.
         '''
@@ -240,9 +189,13 @@ class PDColumn:
         Helper function to set binary ops, validating and doing any
         bookkeeping necessary.
         """
-        if self._has_member_list(PDColumn.binary_list):
+        if self.has_binary():
             raise Exception('Attempting to assign multiple binary functions \
                 to same column')
+        
+        elif op not in PDColumn.binary_list:
+            raise Exception('Attempting to assign invalid binary function')
+    
         else:
             bin_col = PDColumn()
             bin_col.binary_op = op
@@ -275,5 +228,23 @@ class PDColumn:
    
     def concat(self, other):
         return self._set_binary('_concat', other)
-    
+
+    def __eq__(self, other):
+        return self._set_binary('_eq', other)
+
+    def __ne__(self, other):
+        return self._set_binary('_ne', other)
+            
+    def __lt__(self, other):
+        return self._set_binary('_lt', other)
+            
+    def __gt__(self, other):
+        return self._set_binary('_gt', other)
+            
+    def __le__(self, other):
+        return self._set_binary('_le', other)
+            
+    def __ge__(self, other):
+        return self._set_binary('_ge', other)
+
 
