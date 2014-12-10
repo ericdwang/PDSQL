@@ -1,6 +1,6 @@
 
 import copy
-import PDTable
+#import PDTable
 
 class PDColumn:
 
@@ -51,15 +51,7 @@ class PDColumn:
         """
         Returns string representation of this column (in terms of table+column for users).
         """
-        raise NotImplementedError()
-
-    def __repr__(self, level=0):
-        """
-        Returns a string representation of this column (in terms of AST for devs).
-        """
-        s = "\t"*level
-        
-        s += self.name
+        s = self.name
         if self.table:
             s += '(' + str(self.table) + ')'
         if self.agg:
@@ -68,11 +60,23 @@ class PDColumn:
             s += ' unary:'+ self.unary_op
         if self.binary_op:
             s += ' binary:'+ self.binary_op
+        return s
 
+
+    def __repr__(self, level=0):
+        """
+        Returns a string representation of this column (in terms of AST for devs).
+        """
+        s = "\t"*level
+        s += str(self)
         s += "\n"
         for child in self.children:
-            s += child.__repr__(level+1)
+            if isinstance(child, PDColumn):
+                s += child.__repr__(level+1)
+            else:
+                s += "\t"*(level+1) + repr(child)
         return s
+
 
     def __unicode__(self):
         """
@@ -102,7 +106,7 @@ class PDColumn:
             raise Exception('Attempting to assign multiple aggregate functions \
                 to same column')
         
-        elif op not in PDColumn.aggregate_list:
+        elif agg not in PDColumn.aggregate_list:
             raise Exception('Attempting to assign invalid aggregate function')
     
         else:
@@ -212,11 +216,7 @@ class PDColumn:
         Helper function to set binary ops, validating and doing any
         bookkeeping necessary.
         """
-        if self.has_binary():
-            raise Exception('Attempting to assign multiple binary functions \
-                to same column')
-        
-        elif op not in PDColumn.binary_list:
+        if op not in PDColumn.binary_list:
             raise Exception('Attempting to assign invalid binary function')
     
         else:
