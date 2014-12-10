@@ -62,21 +62,31 @@ class PDTable:
     # Query methods
     ################################################################
 
-    def limit(self, lim):
+    def has_query(self, query):
+        return not self._operations[query].isEmpty()
+
+    def _set_query(self, query, column):
         copy = self._copy_table()
-        copy._operations['_limit'].append(lim)
-        operation = ("_limit", lim)
-        copy._operation_ordering.append(operation)
+        copy._operations[query].append(column)
+        copy._operation_ordering.append((query, column))
         return copy
 
+    def limit(self, lim):
+        return self._set_query('_limit', lim)
 
     def where(self, column):
-        copy = self._copy_table()
-        copy._operations['_where'].append(column)
-        operation = ("_where", column)
-        copy._operation_ordering.append(operation)
-        return copy
+        return self._set_query('_where', column)
 
+    def group(self, column):
+        return self._set_query('_group', column)
+
+    def join(self, tableB):
+        return self._set_query('_join', tableB)
+
+    def having(self, column):
+        return self._set_query('_having', column)
+
+    # select is a special case because can have multiple columns with single query
     def select(self, *args, **kwargs):
         copy = self._copy_table()
         for column in args:
@@ -85,27 +95,6 @@ class PDTable:
             assert name == column.name # need to make sure we set the name during column creation
             copy._operations['_select'].append((column.name, column))
         operation = ("_select", column)
-        copy._operation_ordering.append(operation)
-        return copy
-
-    def group(self, column):
-        copy = self._copy_table()
-        copy._operations['_group'].append(column)
-        operation = ("_group", column)
-        copy._operation_ordering.append(operation)
-        return copy
-
-    def join(self, tableB):
-        copy = self._copy_table()
-        copy._operations['_join'].append(tableB)
-        operation = ("_join", tableB)
-        copy._operation_ordering.append(operation)
-        return copy
-
-    def having(self, column):
-        copy = self._copy_table()
-        copy._operations['_having'].append(column)
-        operation = ("_having", column)
         copy._operation_ordering.append(operation)
         return copy
 
@@ -139,4 +128,6 @@ class PDTable:
             for lst in self._operations:
                 for v in lst:
                     copy._operations[op].append(v)
+        for op in self._operation_ordering:
+            copy._operation_ordering.append(op)
         return copy
