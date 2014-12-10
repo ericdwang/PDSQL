@@ -229,7 +229,6 @@ class PDColumn:
             new_col = PDColumn()
             new_col.binary_op = op
             setattr(new_col, op, True)
-            new_col.ops.append(op)
 
             c1 = copy.copy(self)
             c2 = copy.copy(other)
