@@ -21,7 +21,8 @@ class PDColumn:
     # col1 + col2, with the exception of methods like concat which have no
     # raw equivalent.
     binary_list = ['_add', '_sub', '_mul', '_div', '_mod', '_concat', \
-                   '_or', '_and', '_eq', '_ne', '_lt', '_gt', '_le', '_ge']
+                   '_or', '_and', '_eq', '_ne', '_lt', '_gt', '_le',\
+                   '_ge', '_in']
 
     def __init__(self, name='Column', table=None):
         """
@@ -53,7 +54,7 @@ class PDColumn:
         """
         s = self.name
         if self.table:
-            s += '(' + str(self.table) + ')'
+            s += '(' + str(self.table.name) + ')'
         if self.agg:
             s += ' agg:'+ self.agg
         if self.unary_op:
@@ -227,6 +228,7 @@ class PDColumn:
 
             c1 = copy.copy(self)
             c2 = copy.copy(other)
+
             new_col.children.append(c1)
             new_col.children.append(c2)
             return new_col
@@ -273,5 +275,10 @@ class PDColumn:
 
     def __ge__(self, other):
         return self._set_binary('_ge', other)
+
+    # in_ is used because 'in' is a keyword in python. You can override
+    # the __contains__ operator, but it always casts results to bools.
+    def in_(self, other):
+        return self._set_binary('_in', other)
 
 
