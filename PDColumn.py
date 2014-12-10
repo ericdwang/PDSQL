@@ -144,7 +144,7 @@ class PDColumn:
     # Invariant: Only one can be active at a time.
     ################################################################
 
-    def has_unary_op(self):
+    def has_unary(self):
         '''
         Returns true if column has an aggregate function set. False otherwise.
         '''
@@ -156,7 +156,8 @@ class PDColumn:
         Helper function to set unary math ops, validating and doing any
         bookkeeping necessary.
         """
-        if self.has_unary_op():
+        if self.has_unary():
+            #TODO: Determine if this is a valid restriction. 
             raise Exception('Attempting to assign multiple unary functions \
                 to same column')
         
