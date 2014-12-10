@@ -63,48 +63,51 @@ class PDTable:
     ################################################################
 
     def limit(self, lim):
-        self._operations['_limit'].append(lim)
+        copy = self._copy_table()
+        copy._operations['_limit'].append(lim)
         operation = ("_limit", lim)
-        self._operation_ordering.append(operation)
+        copy._operation_ordering.append(operation)
+        return copy
 
 
     def where(self, column):
-        #self.table[column] = column
-        self._operations['_where'].append(column)
+        copy = self._copy_table()
+        copy._operations['_where'].append(column)
         operation = ("_where", column)
-        self._operation_ordering.append(operation)
-        return self
+        copy._operation_ordering.append(operation)
+        return copy
 
     def select(self, *args, **kwargs):
+        copy = self._copy_table()
         for column in args:
-            #self.table[column] = column
-            self._operations['_select'].append((column.name, column))
+            copy._operations['_select'].append((column.name, column))
         for name, column in kwargs.items():
             assert name == column.name # need to make sure we set the name during column creation
-            #self.table[column] = column
-            self._operations['_select'].append((column.name, column))
+            copy._operations['_select'].append((column.name, column))
         operation = ("_select", column)
-        self._operation_ordering.append(operation)
-        return self
+        copy._operation_ordering.append(operation)
+        return copy
 
     def group(self, column):
-        self._operations['_group'].append(column)
+        copy = self._copy_table()
+        copy._operations['_group'].append(column)
         operation = ("_group", column)
-        self._operation_ordering.append(operation)
-        return self
+        copy._operation_ordering.append(operation)
+        return copy
 
     def join(self, tableB):
-        self._operations['_join'].append(tableB)
+        copy = self._copy_table()
+        copy._operations['_join'].append(tableB)
         operation = ("_join", tableB)
-        self._operation_ordering.append(operation)
-        return self
+        copy._operation_ordering.append(operation)
+        return copy
 
     def having(self, column):
-        #self.table[column] = column
-        self._operations['_having'].append(column)
+        copy = self._copy_table()
+        copy._operations['_having'].append(column)
         operation = ("_having", column)
-        self._operation_ordering.append(operation)
-        return self
+        copy._operation_ordering.append(operation)
+        return copy
 
     ################################################################
     # Magic methods
@@ -118,11 +121,22 @@ class PDTable:
             self.table[name] = column
         return column
 
-    #def __setattr__(self, name, value):
-    #    pass
-
     def __getitem__(self, key):
         if type(key) == str:
             return self.table[key]
         else:
             return [v for k, v in self.table.iteritems() if k == key]
+
+    ################################################################
+    # Internal Methods
+    ################################################################
+
+    def _copy_table(self):
+        copy = PDTable(self.name)
+        for k, v in self.table:
+            copy.table[k] = v
+        for op in PDTable.operations:
+            for lst in self._operations:
+                for v in lst:
+                    copy._operations[op].append(v)
+        return copy
