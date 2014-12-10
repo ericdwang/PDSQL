@@ -35,12 +35,14 @@ class PDColumn:
         self.table = table
         self.name = name
         self.children = []
-
+        self.ops = []
 
     ################################################################
     # Evaluation methods
     ################################################################
 
+    #TODO: Determine if we really need an explicit AST, or if our implicit
+    #      AST is sufficient.
     def evaluate(self):
         """
         Evaluates into AST and returns it.
@@ -114,6 +116,7 @@ class PDColumn:
             new_col = copy.copy(self)
             new_col.agg = agg
             setattr(new_col, agg, True)
+            new_col.ops.append(agg)
             return new_col
 
 
@@ -169,6 +172,7 @@ class PDColumn:
             new_col = copy.copy(self)
             new_col.unary_op = op
             setattr(new_col, op, True)
+            new_col.ops.append(op)
             return new_col
 
 
@@ -225,6 +229,7 @@ class PDColumn:
             new_col = PDColumn()
             new_col.binary_op = op
             setattr(new_col, op, True)
+            new_col.ops.append(op)
 
             c1 = copy.copy(self)
             c2 = copy.copy(other)
