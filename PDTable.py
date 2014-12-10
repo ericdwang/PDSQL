@@ -1,7 +1,11 @@
 
-import PDColumn
+from PDColumn import PDColumn
 
 class PDTable:
+
+    # List of valid operations
+    operations = [ '_limit', '_where', '_select', '_group', \
+                   '_join', '_having']
 
     def __init__(self, name):
         '''
@@ -11,14 +15,14 @@ class PDTable:
         self.table = {}
         self.name = name
 
-        # Initialize internal variables as lists. Used to store columnrs
-        _where = []
-        _select = []
-        _limit = []
-        _group = []
-        _join = []
-        _having = []
-        _operation_ordering = [] # list of tuples in order of operation
+        # Initialize internal variables as lists. Used to store columns
+        # join can store tables
+        self._operations = {}
+        for op in PDTable.operations:
+            self._operations[op] = []
+
+        # List of tuples in order of operation (operation, column)
+        self._operation_ordering = []
 
     def __str__(self):
         """
@@ -29,9 +33,24 @@ class PDTable:
 
     def __repr__(self, level=0):
         """
-        Returns a string representation of this table (in terms of AST for devs).
+        Returns a string representation of this table
         """
-        raise NotImplementedError()
+        s = "\t"*level
+        s += self.name+"\n"
+
+        for opTup in self._operation_ordering:
+            op = opTup[0]
+            col = opTup[1]
+            s += "\t"*(level+1) + op + ": \n"
+            if op == '_join':
+                b = col.__repr__(level+1)
+                s += "\t" + b
+            else:
+                #s += str(self._operations[op][count[op]])
+                s += "\t"*(level+1) + str(col)
+            s += "\n"
+            #count[op] += 1
+        return s
 
     def __unicode__(self):
         """
@@ -44,47 +63,47 @@ class PDTable:
     ################################################################
 
     def limit(self, lim):
-        self._limit.append(lim)
+        self._operations['_limit'].append(lim)
         operation = ("_limit", lim)
-        _operation_ordering.append(operation)
+        self._operation_ordering.append(operation)
 
 
     def where(self, column):
-        self.table[column] = column
-        self._where.append(column)
+        #self.table[column] = column
+        self._operations['_where'].append(column)
         operation = ("_where", column)
-        _operation_ordering.append(operation)
+        self._operation_ordering.append(operation)
         return self
 
     def select(self, *args, **kwargs):
         for column in args:
-            self.table[column] = column
-            self._select.append(column)
+            #self.table[column] = column
+            self._operations['_select'].append((column.name, column))
         for name, column in kwargs.items():
-            self.table[column] = column
-            self._select.append(column)
+            assert name == column.name # need to make sure we set the name during column creation
+            #self.table[column] = column
+            self._operations['_select'].append((column.name, column))
         operation = ("_select", column)
-        _operation_ordering.append(operation)
+        self._operation_ordering.append(operation)
         return self
 
     def group(self, column):
-        self.table[column] = column
-        _group.append(column)
+        self._operations['_group'].append(column)
         operation = ("_group", column)
-        _operation_ordering.append(operation)
+        self._operation_ordering.append(operation)
         return self
 
-    def join(self, tableA, tableB):
-        _join.append((tableA, tableB))
-        operation = ("_join", column)
-        _operation_ordering.append(operation)
+    def join(self, tableB):
+        self._operations['_join'].append(tableB)
+        operation = ("_join", tableB)
+        self._operation_ordering.append(operation)
         return self
 
     def having(self, column):
-        self.table[column] = column
-        self.having.append(column)
+        #self.table[column] = column
+        self._operations['_having'].append(column)
         operation = ("_having", column)
-        _operation_ordering.append(operation)
+        self._operation_ordering.append(operation)
         return self
 
     ################################################################
@@ -92,7 +111,9 @@ class PDTable:
     ################################################################
 
     def __getattr__(self, name):
-        return self.table[name]
+        column = PDColumn(name, self)
+        self.table[name] = column
+        return column
 
     #def __setattr__(self, name, value):
     #    pass
