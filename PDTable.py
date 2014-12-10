@@ -18,6 +18,26 @@ class PDTable:
         _group = []
         _join = []
         _having = []
+        _operation_ordering = [] # list of tuples in order of operation
+
+    def __str__(self):
+        """
+        Returns string representation of this table
+        """
+        raise NotImplementedError()
+
+
+    def __repr__(self, level=0):
+        """
+        Returns a string representation of this table (in terms of AST for devs).
+        """
+        raise NotImplementedError()
+
+    def __unicode__(self):
+        """
+        Returns unicode representation of this column.
+        """
+        raise NotImplementedError()
 
     ################################################################
     # Query methods
@@ -25,10 +45,15 @@ class PDTable:
 
     def limit(self, lim):
         self._limit.append(lim)
+        operation = ("_limit", lim)
+        _operation_ordering.append(operation)
+
 
     def where(self, column):
         self.table[column] = column
         self._where.append(column)
+        operation = ("_where", column)
+        _operation_ordering.append(operation)
         return self
 
     def select(self, *args, **kwargs):
@@ -38,20 +63,28 @@ class PDTable:
         for name, column in kwargs.items():
             self.table[column] = column
             self._select.append(column)
+        operation = ("_select", column)
+        _operation_ordering.append(operation)
         return self
 
     def group(self, column):
         self.table[column] = column
         _group.append(column)
+        operation = ("_group", column)
+        _operation_ordering.append(operation)
         return self
 
     def join(self, tableA, tableB):
         _join.append((tableA, tableB))
+        operation = ("_join", column)
+        _operation_ordering.append(operation)
         return self
 
     def having(self, column):
         self.table[column] = column
         self.having.append(column)
+        operation = ("_having", column)
+        _operation_ordering.append(operation)
         return self
 
     ################################################################
