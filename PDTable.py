@@ -111,8 +111,11 @@ class PDTable:
     ################################################################
 
     def __getattr__(self, name):
-        column = PDColumn(name, self)
-        self.table[name] = column
+        if name in self.table:
+            column = self.table[name]
+        else:
+            column = PDColumn(name, self)
+            self.table[name] = column
         return column
 
     #def __setattr__(self, name, value):
