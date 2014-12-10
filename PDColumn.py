@@ -1,6 +1,6 @@
 
 import copy
-#import PDTable
+import PDTable
 
 class PDColumn:
 

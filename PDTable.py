@@ -49,7 +49,7 @@ class PDTable:
         _join.append((tableA, tableB))
         return self
 
-    def having(self, column)
+    def having(self, column):
         self.table[column] = column
         self.having.append(column)
         return self
