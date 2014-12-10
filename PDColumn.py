@@ -22,7 +22,7 @@ class PDColumn:
     # raw equivalent.
     binary_list = ['_add', '_sub', '_mul', '_div', '_mod', '_concat', \
                    '_or', '_and', '_eq', '_ne', '_lt', '_gt', '_le', '_ge']
-    
+
     def __init__(self, name='Column', table=None):
         """
         Initializes column to be empty. Optional table argument allows
@@ -39,7 +39,7 @@ class PDColumn:
     ################################################################
     # Evaluation methods
     ################################################################
-    
+
     def evaluate(self):
         """
         Evaluates into AST and returns it.
@@ -84,13 +84,13 @@ class PDColumn:
         """
         raise NotImplementedError()
 
-            
+
     ################################################################
     # Aggregation Methods
     #
     # Invariant: Only one can be active at a time.
     ################################################################
-   
+
     def has_aggregate(self):
         '''
         Returns true if column has an aggregate function set. False otherwise.
@@ -105,20 +105,20 @@ class PDColumn:
         if self.has_aggregate():
             raise Exception('Attempting to assign multiple aggregate functions \
                 to same column')
-        
+
         elif agg not in PDColumn.aggregate_list:
             raise Exception('Attempting to assign invalid aggregate function')
-    
+
         else:
             new_col = copy.copy(self)
             new_col.agg = agg
             setattr(new_col, agg, True)
             return new_col
 
-    
+
     def sum(self):
         return self._set_aggregate('_sum')
-    
+
     def avg(self):
         return self._set_aggregate('_avg')
 
@@ -137,7 +137,7 @@ class PDColumn:
     def min(self):
         return self._set_aggregate('_min')
 
-    
+
     ################################################################
     # Unary Math Methods
     #
@@ -150,27 +150,27 @@ class PDColumn:
         '''
         return bool(self.unary_op)
 
-    
+
     def _set_unary(self, op):
         """
         Helper function to set unary math ops, validating and doing any
         bookkeeping necessary.
         """
         if self.has_unary():
-            #TODO: Determine if this is a valid restriction. 
+            #TODO: Determine if this is a valid restriction.
             raise Exception('Attempting to assign multiple unary functions \
                 to same column')
-        
+
         elif op not in PDColumn.unary_list:
             raise Exception('Attempting to assign invalid unary function')
-    
+
         else:
             new_col = copy.copy(self)
             new_col.unary_op = op
             setattr(new_col, op, True)
             return new_col
 
-   
+
     def __abs__(self):
         return self._set_unary('_abs')
     def abs(self):
@@ -210,8 +210,8 @@ class PDColumn:
         Returns true if column has an binary op set. False otherwise.
         '''
         return bool(self.binary_op)
-   
-    
+
+
     def _set_binary(self, op, other):
         """
         Helper function to set binary ops, validating and doing any
@@ -219,7 +219,7 @@ class PDColumn:
         """
         if op not in PDColumn.binary_list:
             raise Exception('Attempting to assign invalid binary function')
-    
+
         else:
             new_col = PDColumn()
             new_col.binary_op = op
@@ -231,28 +231,28 @@ class PDColumn:
             new_col.children.append(c2)
             return new_col
 
-    
+
     def __add__(self, other):
         return self._set_binary('_add', other)
-    
+
     def __sub__(self, other):
         return self._set_binary('_sub', other)
-    
+
     def __mul__(self, other):
         return self._set_binary('_mul', other)
-    
+
     def __div__(self, other):
         return self._set_binary('_div', other)
-    
+
     def __mod__(self, other):
         return self._set_binary('_mod', other)
-   
+
     def __and__(self, other):
         return self._set_binary('_and', other)
-   
+
     def __or__(self, other):
         return self._set_binary('_or', other)
-   
+
     def concat(self, other):
         return self._set_binary('_concat', other)
 
@@ -261,16 +261,16 @@ class PDColumn:
 
     def __ne__(self, other):
         return self._set_binary('_ne', other)
-            
+
     def __lt__(self, other):
         return self._set_binary('_lt', other)
-            
+
     def __gt__(self, other):
         return self._set_binary('_gt', other)
-            
+
     def __le__(self, other):
         return self._set_binary('_le', other)
-            
+
     def __ge__(self, other):
         return self._set_binary('_ge', other)
 
