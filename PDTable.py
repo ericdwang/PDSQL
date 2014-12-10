@@ -66,6 +66,8 @@ class PDTable:
         return not self._operations[query].isEmpty()
 
     def _set_query(self, query, column):
+        if query not in PDTable.operations:
+            raise Exception("Unsupported query: " + query)
         copy = self._copy_table()
         copy._operations[query].append(column)
         copy._operation_ordering.append((query, column))
