@@ -1,4 +1,5 @@
 
+import copy
 from PDColumn import PDColumn
 
 class PDTable:
@@ -68,10 +69,10 @@ class PDTable:
     def _set_query(self, query, column):
         if query not in PDTable.operations:
             raise Exception("Unsupported query: " + query)
-        copy = self._copy_table()
-        copy._operations[query].append(column)
-        copy._operation_ordering.append((query, column))
-        return copy
+        table_copy = copy.copy(self)
+        table_copy._operations[query].append(column)
+        table_copy._operation_ordering.append((query, column))
+        return table_copy
 
     def limit(self, lim):
         return self._set_query('_limit', lim)
@@ -90,15 +91,15 @@ class PDTable:
 
     # select is a special case because can have multiple columns with single query
     def select(self, *args, **kwargs):
-        copy = self._copy_table()
+        table_copy = copy.copy(self)
         for column in args:
-            copy._operations['_select'].append((column.name, column))
+            table_copy._operations['_select'].append((column.name, column))
         for name, column in kwargs.items():
             assert name == column.name # need to make sure we set the name during column creation
-            copy._operations['_select'].append((column.name, column))
+            table_copy._operations['_select'].append((column.name, column))
         operation = ("_select", column)
-        copy._operation_ordering.append(operation)
-        return copy
+        table_copy._operation_ordering.append(operation)
+        return table_copy
 
     ################################################################
     # Magic methods
@@ -117,19 +118,3 @@ class PDTable:
             return self.table[key]
         else:
             return [v for k, v in self.table.iteritems() if k == key]
-
-    ################################################################
-    # Internal Methods
-    ################################################################
-
-    def _copy_table(self):
-        copy = PDTable(self.name)
-        for k, v in self.table:
-            copy.table[k] = v
-        for op in PDTable.operations:
-            for lst in self._operations:
-                for v in lst:
-                    copy._operations[op].append(v)
-        for op in self._operation_ordering:
-            copy._operation_ordering.append(op)
-        return copy
