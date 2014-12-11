@@ -105,6 +105,9 @@ class PDTable:
     # Magic methods
     ################################################################
 
+    # NOTE: This breaks a lot of things if you're not careful.
+    # It should be an invariant that you cannot define non-columns as attributes
+    # since this method is being used to create PDColumns when they aren't found
     def __getattr__(self, name):
         if name in self.table:
             column = self.table[name]
@@ -118,3 +121,8 @@ class PDTable:
             return self.table[key]
         else:
             return [v for k, v in self.table.iteritems() if k == key]
+
+    def __copy__(self):
+        new_table = PDTable(self.name)
+        new_table.__dict__.update(self.__dict__)
+        return new_table
