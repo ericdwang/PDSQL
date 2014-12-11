@@ -6,18 +6,18 @@ class PDTable:
 
     # List of valid operations
     operations = [ '_limit', '_where', '_select', '_group', \
-                   '_join', '_having']
+                   '_join', '_having', '_order']
 
     def __init__(self, name):
         '''
         Initializes tables to be empty. Requires name
         '''
-        # Hash of columns
-        self.table = {}
         self.name = name
 
         # List of tuples in order of operation (operation, column)
         self._operation_ordering = []
+
+        self.reverse_val = False
 
     def __str__(self):
         """
@@ -87,6 +87,14 @@ class PDTable:
     def having(self, column):
         return self._set_query('_having', column)
 
+    def order(self, column):
+        return self._set_query('_order', column)
+
+    def reverse(self):
+        new_table = copy.deepcopy(self)
+        new_table.reverse_val = True
+        return new_table
+
     # select is a special case because can have multiple columns with single query
     def select(self, *args, **kwargs):
         table_copy = copy.deepcopy(self)
@@ -107,18 +115,13 @@ class PDTable:
     # It should be an invariant that you cannot define non-columns as attributes
     # since this method is being used to create PDColumns when they aren't found
     def __getattr__(self, name):
-        if name in self.table:
-            column = self.table[name]
-        else:
-            column = PDColumn(name, self)
-            self.table[name] = column
-        return column
+        return PDColumn(name, self)
 
     def __getitem__(self, key):
         if type(key) == str:
-            return self.table[key]
+            return PDColumn(key, self)
         else:
-            return [v for k, v in self.table.iteritems() if k == key]
+            raise Exception("Attempting to get column with non-string key")
 
     def __copy__(self):
         new_table = PDTable(self.name)
@@ -127,7 +130,7 @@ class PDTable:
 
     def __deepcopy__(self, memo):
         new_table = PDTable(self.name)
-        new_table.table = copy.copy(self.table)
+        new_table.reverse_val = copy.copy(self.reverse_val)
         new_table._operation_ordering = copy.copy(self._operation_ordering)
         return new_table
 

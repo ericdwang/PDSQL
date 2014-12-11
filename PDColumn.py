@@ -41,15 +41,6 @@ class PDColumn:
     # Evaluation methods
     ################################################################
 
-    #TODO: Determine if we really need an explicit AST, or if our implicit
-    #      AST is sufficient.
-    def evaluate(self):
-        """
-        Evaluates into AST and returns it.
-        """
-        raise NotImplementedError()
-
-
     def __str__(self):
         """
         Returns string representation of this column (in terms of table+column for users).
