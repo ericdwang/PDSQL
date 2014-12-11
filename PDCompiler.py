@@ -5,6 +5,23 @@ from PDTable import PDTable
 # Structure taken from Berkeley's Fall 2014 CS164 projects
 def compile(ast):
 
+    # Does not have not -- must be desugared down.
+    unary_map = {
+        '_sum':'SUM', '_avg':'AVG', '_count':'COUNT', '_first':'FIRST', \
+        '_last':'LAST', '_max':'MAX', '_min':'MIN', \
+        '_abs':'ABS', '_ceil':'CEIL', '_floor':'FLOOR', '_round':'ROUND'
+    }
+
+    binary_middle_map = {
+        '_add':'+', '_sub':'-', '_mul':'*', '_div':'/', '_concat':'+', \
+        '_or':'OR', '_and':'AND', '_eq':'=', '_ne':'<>', '_lt':'<', '_gt':'>', \
+        '_le':'<=', '_ge':'>=', '_in':'IN', '_between':'BETWEEN', '_like':'LIKE'
+    }
+
+    binary_function_map = {
+        '_mod':'MOD'
+    }
+
     _uniquegen_counter = 0
     def uniquegen():
         _uniquegen_counter += 1
@@ -20,8 +37,14 @@ def compile(ast):
                 children = [compilenode(child) for child in node.children]
 
                 # Switch on all binary ops
-                if node.binary_op == '_add':
-                    strings = ['('] + children[0] + ['+'] + children[1] + [')']
+
+                if node.binary_op in binary_middle_map:
+                    strings = ['('] + children[0] + [binary_middle_map[node.binary_op]] + \
+                            children[1] + [')']
+
+                elif node.binary_op in binary_function_map:
+                    strings = [binary_function_map[node.binary_op] + '('] + \
+                            children[0] + [','] + children[1] + [')']
 
                 else:
                     raise Exception("AST column contains unrecognized binary op: "\
@@ -42,31 +65,31 @@ def compile(ast):
             # TODO: Determine if we need to maintain ordering on aggs and ops.
             # If so, we'll need to loop through node.ops. Ordering is there.
 
-            if node.agg:
-                op = node.agg
+            # TODO: Push nots down AST next to condition (binary)
 
-                if op == '_sum':
-                    strings = ['SUM('] + strings + [')']
-
+            for op in node.ops:
+                if op in unary_map:
+                    strings = [unary_map[op] + '('] + strings + [')']
                 else:
                     raise Exception("AST column contains unrecognized unary op: "\
                              + op)
-
-
-            if node.unary_op:
-                op = node.unary_op
-
-                if op == '_abs':
-                    strings = ['ABS('] + strings + [')']
-
-                else:
-                    raise Exception("AST column contains unrecognized unary op: "\
-                             + op)
-
 
         elif isinstance(node, PDTable):
             #TODO: Fill in
             raise NotImplementedError()
+
+        elif isinstance(node, tuple):
+            new_elements = []
+            for item in node:
+                if isinstance(item, basestring):
+                    new_elements += ['\'' + item + '\'']
+                else:
+                    new_elements += [str(item)]
+            new_elements = ','.join(new_elements)
+            strings = ['(' + new_elements + ')']
+
+        elif isinstance(node, basestring):
+            strings = ['\'' + node + '\'']
 
         else:
             strings = [str(node)]

@@ -22,7 +22,7 @@ class PDColumn:
     # raw equivalent.
     binary_list = ['_add', '_sub', '_mul', '_div', '_mod', '_concat', \
                    '_or', '_and', '_eq', '_ne', '_lt', '_gt', '_le',\
-                   '_ge', '_in']
+                   '_ge', '_in', '_between', '_like']
 
     def __init__(self, name='Column', table=None):
         """
@@ -284,5 +284,11 @@ class PDColumn:
     # the __contains__ operator, but it always casts results to bools.
     def in_(self, other):
         return self._set_binary('_in', other)
+
+    def between(self, other):
+        return self._set_binary('_between', other)
+
+    def like(self, other):
+        return self._set_binary('_like', other)
 
 
