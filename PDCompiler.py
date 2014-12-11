@@ -87,7 +87,10 @@ def compile(ast):
             select_list.pop()
 
             # FROM + JOIN
-            join = [i[1] for i in ops if i[0] == '_join'][0]
+            join = [i[1] for i in ops if i[0] == '_join']
+            if len(join) > 0:
+                joins = join[0]
+
             from_list = ['FROM']
 
             if not join:
@@ -157,6 +160,36 @@ def compile(ast):
         return strings
 
 
+    def apply_children(node, func):
+        if isinstance(node, PDColumn):
+            func(node)
+            for child in node.children:
+                apply_children(child, func)
+
+        elif isinstance(node, PDTable):
+            func(node)
+            ops = node._operation_ordering
+            for op in ops:
+                if op[0] == '_select':
+                    for col in op[1]:
+                        apply_children(col['column'], func)
+                else:
+                    apply_children(op[1], func)
+
+        elif hasattr(node, '__iter__'):
+            for child in node:
+                apply_children(child, func)
+
+
+    def rewrite_select(node):
+        if isinstance(node, PDTable):
+            ops = node._operation_ordering
+            if len([i[1] for i in ops if i[0] == '_select']) == 0:
+                node._operation_ordering.append(('_select', [{'column':PDColumn(name='*')}]))
+
+
     ast = copy.deepcopy(ast)
+    apply_children(ast, rewrite_select)
     return " ".join(compilenode(ast)) + ';'
+
 
