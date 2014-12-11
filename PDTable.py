@@ -81,8 +81,9 @@ class PDTable:
     def group(self, column):
         return self._set_query('_group', column)
 
-    def join(self, tableB):
-        return self._set_query('_join', tableB)
+    def join(self, tableB, cond=None):
+        join_dict = {'table':tableB, 'cond':cond}
+        return self._set_query('_join', join_dict)
 
     def having(self, column):
         return self._set_query('_having', column)

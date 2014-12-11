@@ -86,18 +86,18 @@ def compile(ast):
                     select_list += s + [',']
             select_list.pop()
 
-            # JOIN
-            joined = False
-
-
-            # FROM
+            # FROM + JOIN
+            join = [i[1] for i in ops if i[0] == '_join'][0]
             from_list = ['FROM']
 
-            if not joined:
+            if not join:
                 from_list += [node.name]
             else:
-                from_list += ['<<THIS WOULD BE A JOIN>>']
-
+                from_list += ['('] + [node.name] + ['INNER JOIN'] + \
+                        [join['table'].name]
+                if join['cond']:
+                    from_list += ['ON'] + compilenode(join['cond'])
+                from_list += [')']
 
             # WHERE
             where_list = ['WHERE']
