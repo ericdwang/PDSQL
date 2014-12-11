@@ -46,6 +46,10 @@ class PDTable:
             if op == '_join':
                 b = col.__repr__(level+1)
                 s += "\t" + b
+            if op == '_select':
+                for column in col:
+                    b = "\t"*(level+1) + str(column)
+                    s += b + '\n'
             else:
                 #s += str(self._operations[op][count[op]])
                 s += "\t"*(level+1) + str(col)
@@ -92,12 +96,15 @@ class PDTable:
     # select is a special case because can have multiple columns with single query
     def select(self, *args, **kwargs):
         table_copy = copy.copy(self)
+        columns = []
         for column in args:
+            columns.append(column)
             table_copy._operations['_select'].append((column.name, column))
         for name, column in kwargs.items():
-            assert name == column.name # need to make sure we set the name during column creation
-            table_copy._operations['_select'].append((column.name, column))
-        operation = ("_select", column)
+            #assert name == column.name # need to make sure we set the name during column creation
+            columns.append(column)
+            table_copy._operations['_select'].append((name, column))
+        operation = ("_select", columns)
         table_copy._operation_ordering.append(operation)
         return table_copy
 
@@ -126,3 +133,8 @@ class PDTable:
         new_table = PDTable(self.name)
         new_table.__dict__.update(self.__dict__)
         return new_table
+
+    def __nonzero__(self):
+        # Always truthy if this exists.
+        return True
+
