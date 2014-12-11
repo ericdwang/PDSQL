@@ -97,13 +97,14 @@ class PDTable:
         return new_table
 
     # select is a special case because can have multiple columns with single query
-    def select(self, *args, **kwargs):
+    def select(self, *args):
         table_copy = copy.deepcopy(self)
         columns = []
         for column in args:
-            columns.append({'column' : column})
-        for name, column in kwargs.items():
-            columns.append({'name' : name, 'column' : column})
+            if isinstance(column, tuple):
+                columns.append({'name': column[0], 'column' : column[1]})
+            else:
+                columns.append({'column' : column})
         operation = ("_select", columns)
         table_copy._operation_ordering.append(operation)
         return table_copy
