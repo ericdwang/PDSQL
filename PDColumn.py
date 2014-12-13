@@ -1,28 +1,30 @@
-
 import copy
-#import PDTable
 
-class PDColumn:
+
+class PDColumn(object):
 
     # General list available to all PDColumn instances
-    aggregate_list = ['_sum', '_avg', '_count', '_first', '_last', \
-                      '_max', '_min']
+    aggregate_list = (
+        '_sum', '_avg', '_count', '_first', '_last', '_max', '_min'
+    )
 
     # Unary mathematical operators.
     #
     # These will be available both as chained methods, e.g.,
     # col.abs() and as built in functions, e.g., abs(col)
-    unary_list = ['_abs', '_ceil', '_floor', '_round', '_not']
-
+    unary_list = (
+        '_abs', '_ceil', '_floor', '_round', '_not'
+    )
 
     # Binary operators.
     #
     # These will be available using raw python syntax when possible, e.g.,
     # col1 + col2, with the exception of methods like concat which have no
     # raw equivalent.
-    binary_list = ['_add', '_sub', '_mul', '_div', '_mod', '_concat', \
-                   '_or', '_and', '_eq', '_ne', '_lt', '_gt', '_le',\
-                   '_ge', '_in', '_between', '_like']
+    binary_list = (
+        '_add', '_sub', '_mul', '_div', '_mod', '_concat', '_or', '_and',
+        '_eq', '_ne', '_lt', '_gt', '_le', '_ge', '_in', '_between', '_like'
+    )
 
     def __init__(self, name='Column', table=None):
         """
@@ -43,41 +45,40 @@ class PDColumn:
 
     def __str__(self):
         """
-        Returns string representation of this column (in terms of table+column for users).
+        Returns string representation of this column (in terms of table+column
+        for users).
         """
         s = self.name
         if self.table:
             s += '(' + str(self.table.name) + ')'
         if self.agg:
-            s += ' agg:'+ self.agg
+            s += ' agg:' + self.agg
         if self.unary_op:
-            s += ' unary:'+ self.unary_op
+            s += ' unary:' + self.unary_op
         if self.binary_op:
-            s += ' binary:'+ self.binary_op
+            s += ' binary:' + self.binary_op
         return s
-
 
     def __repr__(self, level=0):
         """
-        Returns a string representation of this column (in terms of AST for devs).
+        Returns a string representation of this column (in terms of AST for
+        devs).
         """
-        s = "\t"*level
+        s = "\t" * level
         s += str(self)
         s += "\n"
         for child in self.children:
             if isinstance(child, PDColumn):
-                s += child.__repr__(level+1)
+                s += child.__repr__(level + 1)
             else:
-                s += "\t"*(level+1) + repr(child)
+                s += "\t" * (level + 1) + repr(child)
         return s
-
 
     def __unicode__(self):
         """
         Returns unicode representation of this column.
         """
         raise NotImplementedError()
-
 
     ################################################################
     # Aggregation Methods
@@ -86,9 +87,9 @@ class PDColumn:
     ################################################################
 
     def has_aggregate(self):
-        '''
+        """
         Returns true if column has an aggregate function set. False otherwise.
-        '''
+        """
         return bool(self.agg)
 
     def _set_aggregate(self, agg):
@@ -109,7 +110,6 @@ class PDColumn:
             setattr(new_col, agg, True)
             new_col.ops.append(agg)
             return new_col
-
 
     def sum(self):
         return self._set_aggregate('_sum')
@@ -132,7 +132,6 @@ class PDColumn:
     def min(self):
         return self._set_aggregate('_min')
 
-
     ################################################################
     # Unary Math Methods
     #
@@ -140,11 +139,10 @@ class PDColumn:
     ################################################################
 
     def has_unary(self):
-        '''
+        """
         Returns true if column has an aggregate function set. False otherwise.
-        '''
+        """
         return bool(self.unary_op)
-
 
     def _set_unary(self, op):
         """
@@ -152,7 +150,7 @@ class PDColumn:
         bookkeeping necessary.
         """
         if self.has_unary():
-            #TODO: Determine if this is a valid restriction.
+            # TODO: Determine if this is a valid restriction.
             raise Exception('Attempting to assign multiple unary functions \
                 to same column')
 
@@ -166,30 +164,32 @@ class PDColumn:
             new_col.ops.append(op)
             return new_col
 
-
     def __abs__(self):
         return self._set_unary('_abs')
+
     def abs(self):
         return self._set_unary('_abs')
 
     def __ceil__(self):
         return self._set_unary('_ceil')
+
     def ceil(self):
         return self._set_unary('_ceil')
 
     def __floor__(self):
         return self._set_unary('_floor')
+
     def floor(self):
         return self._set_unary('_floor')
 
     def __round__(self):
         return self._set_unary('_round')
+
     def round(self):
         return self._set_unary('_round')
 
     def __invert__(self):
         return self._set_unary('_not')
-
 
     ################################################################
     # Binary Math Methods
@@ -202,11 +202,10 @@ class PDColumn:
     ################################################################
 
     def has_binary(self):
-        '''
+        """
         Returns true if column has an binary op set. False otherwise.
-        '''
+        """
         return bool(self.binary_op)
-
 
     def _set_binary(self, op, other):
         """
@@ -227,7 +226,6 @@ class PDColumn:
             new_col.children.append(c1)
             new_col.children.append(c2)
             return new_col
-
 
     def __add__(self, other):
         return self._set_binary('_add', other)
@@ -281,5 +279,3 @@ class PDColumn:
 
     def like(self, other):
         return self._set_binary('_like', other)
-
-

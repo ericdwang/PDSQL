@@ -1,17 +1,19 @@
-
 import copy
+
 from PDColumn import PDColumn
 
-class PDTable:
+
+class PDTable(object):
 
     # List of valid operations
-    operations = [ '_limit', '_where', '_select', '_group', \
-                   '_join', '_having', '_order']
+    operations = (
+        '_limit', '_where', '_select', '_group', '_join', '_having', '_order'
+    )
 
     def __init__(self, name):
-        '''
+        """
         Initializes tables to be empty. Requires name
-        '''
+        """
         self.name = name
 
         # List of tuples in order of operation (operation, column)
@@ -25,30 +27,29 @@ class PDTable:
         """
         raise NotImplementedError()
 
-
     def __repr__(self, level=0):
         """
         Returns a string representation of this table
         """
-        s = "\t"*level
-        s += self.name+"\n"
+        s = "\t" * level
+        s += self.name + "\n"
 
         for opTup in self._operation_ordering:
             op = opTup[0]
             col = opTup[1]
-            s += "\t"*(level+1) + op + ": \n"
+            s += "\t" * (level + 1) + op + ": \n"
             if op == '_join':
-                b = col.__repr__(level+1)
+                b = col.__repr__(level + 1)
                 s += "\t" + b
             elif op == '_select':
                 for d in col:
                     n = ""
                     if 'name' in d:
                         n += 'key=' + str(d['name']) + ' '
-                    b = "\t"*(level+1) + n + str(d['column'])
+                    b = "\t" * (level + 1) + n + str(d['column'])
                     s += b + '\n'
             else:
-                s += "\t"*(level+1) + str(col)
+                s += "\t" * (level + 1) + str(col)
             s += "\n"
         return s
 
@@ -82,7 +83,7 @@ class PDTable:
         return self._set_query('_group', column)
 
     def join(self, tableB, cond=None):
-        join_dict = {'table':tableB, 'cond':cond}
+        join_dict = {'table': tableB, 'cond': cond}
         return self._set_query('_join', join_dict)
 
     def having(self, column):
@@ -96,15 +97,16 @@ class PDTable:
         new_table.reverse_val = True
         return new_table
 
-    # select is a special case because can have multiple columns with single query
+    # select is a special case because can have multiple columns with single
+    # query
     def select(self, *args):
         table_copy = copy.deepcopy(self)
         columns = []
         for column in args:
             if isinstance(column, tuple):
-                columns.append({'name': column[0], 'column' : column[1]})
+                columns.append({'name': column[0], 'column': column[1]})
             else:
-                columns.append({'column' : column})
+                columns.append({'column': column})
         operation = ("_select", columns)
         table_copy._operation_ordering.append(operation)
         return table_copy
@@ -115,12 +117,13 @@ class PDTable:
 
     # NOTE: This breaks a lot of things if you're not careful.
     # It should be an invariant that you cannot define non-columns as attributes
-    # since this method is being used to create PDColumns when they aren't found
+    # since this method is being used to create PDColumns when they aren't
+    # found
     def __getattr__(self, name):
         return PDColumn(name, self)
 
     def __getitem__(self, key):
-        if type(key) == str:
+        if isinstance(key, str):
             return PDColumn(key, self)
         else:
             raise Exception("Attempting to get column with non-string key")
@@ -139,4 +142,3 @@ class PDTable:
     def __nonzero__(self):
         # Always truthy if this exists.
         return True
-

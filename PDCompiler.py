@@ -1,31 +1,55 @@
+import copy
 
 from PDColumn import PDColumn
 from PDTable import PDTable
-import copy
+
+
+# Does not have not -- must be desugared down.
+unary_map = {
+    '_sum': 'SUM',
+    '_avg': 'AVG',
+    '_count': 'COUNT',
+    '_first': 'FIRST',
+    '_last': 'LAST',
+    '_max': 'MAX',
+    '_min': 'MIN',
+    '_abs': 'ABS',
+    '_ceil': 'CEIL',
+    '_floor': 'FLOOR',
+    '_round': 'ROUND',
+    '_not': 'NOT'
+}
+
+binary_middle_map = {
+    '_add': '+',
+    '_sub': '-',
+    '_mul': '*',
+    '_div': '/',
+    '_concat': '+',
+    '_or': 'OR',
+    '_and': 'AND',
+    '_eq': '=',
+    '_ne': '<>',
+    '_lt': '<',
+    '_gt': '>',
+    '_le': '<=',
+    '_ge': '>=',
+    '_in': 'IN',
+    '_between': 'BETWEEN',
+    '_like': 'LIKE'
+}
+
+binary_function_map = {
+    '_mod': 'MOD'
+}
+
+_uniquegen_counter = 0
+
 
 # Structure taken from Berkeley's Fall 2014 CS164 projects
-def compile(ast):
-
-    # Does not have not -- must be desugared down.
-    unary_map = {
-        '_sum':'SUM', '_avg':'AVG', '_count':'COUNT', '_first':'FIRST', \
-        '_last':'LAST', '_max':'MAX', '_min':'MIN', \
-        '_abs':'ABS', '_ceil':'CEIL', '_floor':'FLOOR', '_round':'ROUND', \
-        '_not':'NOT'
-    }
-
-    binary_middle_map = {
-        '_add':'+', '_sub':'-', '_mul':'*', '_div':'/', '_concat':'+', \
-        '_or':'OR', '_and':'AND', '_eq':'=', '_ne':'<>', '_lt':'<', '_gt':'>', \
-        '_le':'<=', '_ge':'>=', '_in':'IN', '_between':'BETWEEN', '_like':'LIKE'
-    }
-
-    binary_function_map = {
-        '_mod':'MOD'
-    }
-
-    _uniquegen_counter = 0
+def compile_to_sql(ast):
     def uniquegen():
+        global _uniquegen_counter
         _uniquegen_counter += 1
         return '#reg-' + str(_uniquegen_counter)
 
@@ -41,17 +65,18 @@ def compile(ast):
                 # Switch on all binary ops
 
                 if node.binary_op in binary_middle_map:
-                    strings = ['('] + children[0] + [binary_middle_map[node.binary_op]] + \
-                            children[1] + [')']
+                    strings = ['('] + children[0] + \
+                        [binary_middle_map[node.binary_op]] + \
+                        children[1] + [')']
 
                 elif node.binary_op in binary_function_map:
                     strings = [binary_function_map[node.binary_op] + '('] + \
-                            children[0] + [','] + children[1] + [')']
+                        children[0] + [','] + children[1] + [')']
 
                 else:
-                    raise Exception("AST column contains unrecognized binary op: "\
-                             + node.binary_op)
-
+                    raise Exception(
+                        "AST column contains unrecognized binary op: "
+                        + node.binary_op)
 
             # In the case where no children, fill strings with basic
             # information about the column.
@@ -68,9 +93,9 @@ def compile(ast):
                 if op in unary_map:
                     strings = [unary_map[op] + '('] + strings + [')']
                 else:
-                    raise Exception("AST column contains unrecognized unary op: "\
-                             + op)
-
+                    raise Exception(
+                        "AST column contains unrecognized unary op: "
+                        + op)
 
         elif isinstance(node, PDTable):
             ops = node._operation_ordering
@@ -88,8 +113,6 @@ def compile(ast):
 
             # FROM + JOIN
             join = [i[1] for i in ops if i[0] == '_join']
-            if len(join) > 0:
-                joins = join[0]
 
             from_list = ['FROM']
 
@@ -97,7 +120,7 @@ def compile(ast):
                 from_list += [node.name]
             else:
                 from_list += ['('] + [node.name] + ['INNER JOIN'] + \
-                        [join['table'].name]
+                    [join['table'].name]
                 if join['cond']:
                     from_list += ['ON'] + compilenode(join['cond'])
                 from_list += [')']
@@ -135,10 +158,8 @@ def compile(ast):
             for col in [i[1] for i in ops if i[0] == '_limit']:
                 limit_list += ['LIMIT'] + compilenode(col)
 
-
             strings = select_list + from_list + where_list + group_list + \
-                      having_list + order_list + limit_list
-
+                having_list + order_list + limit_list
 
         elif isinstance(node, tuple):
             new_elements = []
@@ -156,9 +177,7 @@ def compile(ast):
         else:
             strings = [str(node)]
 
-
         return strings
-
 
     def apply_children(node, func):
         if isinstance(node, PDColumn):
@@ -180,16 +199,13 @@ def compile(ast):
             for child in node:
                 apply_children(child, func)
 
-
     def rewrite_select(node):
         if isinstance(node, PDTable):
             ops = node._operation_ordering
             if len([i[1] for i in ops if i[0] == '_select']) == 0:
-                node._operation_ordering.append(('_select', [{'column':PDColumn(name='*')}]))
-
+                node._operation_ordering.append(
+                    ('_select', [{'column': PDColumn(name='*')}]))
 
     ast = copy.deepcopy(ast)
     apply_children(ast, rewrite_select)
     return " ".join(compilenode(ast)) + ';'
-
-

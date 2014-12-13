@@ -1,6 +1,7 @@
 import unittest
 from PDSQL.PDColumn import PDColumn
 
+
 class TestUnaryOps(unittest.TestCase):
 
     def setUp(self):
@@ -22,4 +23,3 @@ class TestUnaryOps(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
