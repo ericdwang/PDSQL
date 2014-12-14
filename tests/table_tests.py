@@ -93,6 +93,20 @@ class TestTableComposition(unittest.TestCase):
             t1.select(c1=t1.c1, c2=t1.c2).compile(),
             'SELECT t1.c2 AS "c2" , t1.c1 AS "c1" FROM t1;')
 
+    def test_distinct(self):
+        self.assertEqual(
+            self.t1.select(self.t1.col).distinct().compile(),
+            'SELECT DISTINCT t1.col FROM t1;')
+
+    def test_is_null(self):
+        t1 = self.t1
+        self.assertEqual(
+            t1.where(t1.col.is_null()).compile(),
+            'SELECT * FROM t1 WHERE ( t1.col IS NULL );')
+        self.assertEqual(
+            t1.where(t1.col.not_null()).compile(),
+            'SELECT * FROM t1 WHERE ( t1.col IS NOT NULL );')
+
 
 class TestDatabaseQuery(unittest.TestCase):
     def setUp(self):

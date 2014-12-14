@@ -98,11 +98,19 @@ def compile_to_sql(ast):
                         "AST column contains unrecognized unary op: "
                         + op)
 
+            if node.null is True:
+                strings.append('IS NULL')
+            elif node.null is False:
+                strings.append('IS NOT NULL')
+
         elif isinstance(node, PDTable):
             ops = node._operation_ordering
 
             # SELECT
             select_list = ['SELECT']
+            if node._distinct:
+                select_list.append('DISTINCT')
+
             for col_list in [i[1] for i in ops if i[0] == '_select']:
                 for col in col_list:
                     s = []

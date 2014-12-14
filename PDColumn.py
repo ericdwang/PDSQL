@@ -34,6 +34,8 @@ class PDColumn(object):
         self.agg = None
         self.unary_op = None
         self.binary_op = None
+        self.null = None
+
         self.table = table
         self.name = name
         self.children = []
@@ -279,3 +281,36 @@ class PDColumn(object):
 
     def like(self, other):
         return self._set_binary('_like', other)
+
+    ################################################################
+    # Null Checking Methods
+    #
+    # Invariant: Only one and no other methods of any type can be
+    # active
+    ################################################################
+
+    def has_null(self):
+        """
+        Returns true if column has null set. False otherwise.
+        """
+        return self.null is not None
+
+    def _set_is_null(self, null):
+        """
+        Helper function to set is null, validating and doing any
+        bookkeeping necessary.
+        """
+        if self.ops:
+            raise Exception('Only columns can be checked for null values')
+        if self.has_null():
+            raise Exception('Already checking column for null values')
+
+        new_col = copy.copy(self)
+        new_col.null = null
+        return new_col
+
+    def is_null(self):
+        return self._set_is_null(True)
+
+    def not_null(self):
+        return self._set_is_null(False)

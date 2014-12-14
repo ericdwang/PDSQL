@@ -25,6 +25,7 @@ class PDTable(object):
         self._operation_ordering = []
 
         self._reverse_val = False
+        self._distinct = False
 
         self._compiled = False
         self._query = None
@@ -163,6 +164,11 @@ class PDTable(object):
         table_copy._operation_ordering.append(operation)
         return table_copy
 
+    def distinct(self):
+        new_table = copy.deepcopy(self)
+        new_table._distinct = True
+        return new_table
+
     ################################################################
     # Magic methods
     ################################################################
@@ -215,6 +221,7 @@ class PDTable(object):
     def __deepcopy__(self, memo):
         new_table = PDTable(self._name)
         new_table._reverse_val = copy.copy(self._reverse_val)
+        new_table._distinct = copy.copy(self._distinct)
         new_table._operation_ordering = copy.copy(self._operation_ordering)
         new_table._cursor = self._cursor
         new_table._compiled = False
