@@ -72,6 +72,27 @@ class TestTableComposition(unittest.TestCase):
             query.compile(),
             'SELECT t1.c FROM t1 ORDER BY t1.c ASC;')
 
+    def test_select(self):
+        t1 = self.t1
+        self.assertEqual(
+            t1.select().compile(),
+            'SELECT * FROM t1;')
+        self.assertEqual(
+            t1.select(t1.c1).compile(),
+            'SELECT t1.c1 FROM t1;')
+        self.assertEqual(
+            t1.select(c1=t1.c1).compile(),
+            'SELECT t1.c1 AS "c1" FROM t1;')
+        self.assertEqual(
+            t1.select(t1.c1, t1.c2).compile(),
+            'SELECT t1.c1 , t1.c2 FROM t1;')
+        self.assertEqual(
+            t1.select(t1.c1, c2=t1.c2).compile(),
+            'SELECT t1.c1 , t1.c2 AS "c2" FROM t1;')
+        self.assertEqual(
+            t1.select(c1=t1.c1, c2=t1.c2).compile(),
+            'SELECT t1.c2 AS "c2" , t1.c1 AS "c1" FROM t1;')
+
 
 class TestDatabaseQuery(unittest.TestCase):
     def setUp(self):
