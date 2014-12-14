@@ -33,11 +33,6 @@ class PDTable(object):
         """
         Compile the query and print it.
         """
-        if not self._cursor:
-            raise Exception(
-                'Attempting to execute query without setting database cursor '
-                'first')
-
         self.compile()
         return self._query
 
@@ -95,6 +90,7 @@ class PDTable(object):
         if not self._compiled:
             self._query = compile_to_sql(self)
             self._compiled = True
+        return self._query
 
     def run(self):
         """
@@ -141,9 +137,12 @@ class PDTable(object):
     def order(self, column):
         return self._set_query('_order', column)
 
+    def __reversed__(self):
+        return self.reverse()
+
     def reverse(self):
         new_table = copy.deepcopy(self)
-        new_table.reverse_val = True
+        new_table._reverse_val = not self._reverse_val
         return new_table
 
     # select is a special case because can have multiple columns with single
@@ -172,8 +171,35 @@ class PDTable(object):
         return PDColumn(name, self)
 
     def __getitem__(self, key):
+        # Getting a column
         if isinstance(key, str):
             return PDColumn(key, self)
+
+        # Getting the first or last row
+        elif isinstance(key, int):
+            if key == 0:
+                return self.limit(1)
+            elif key == -1:
+                table_copy = copy.deepcopy(self)
+                table_copy._reverse_val = not self._reverse_val
+                table_copy._operation_ordering.append(('_limit', 1))
+                return table_copy
+            else:
+                raise Exception(
+                    'Getting a single row that is not the first or last row is '
+                    'unsupported.')
+
+        # Getting the first or last n rows
+        elif isinstance(key, slice):
+            if not key.start and key.stop > 0:
+                return self.limit(key.stop)
+            elif key.start < 0 and not key.stop:
+                table_copy = copy.deepcopy(self)
+                table_copy._reverse_val = not self._reverse_val
+                table_copy._operation_ordering.append(
+                    ('_limit', abs(key.start)))
+                return table_copy
+
         else:
             raise Exception("Attempting to get column with non-string key")
 

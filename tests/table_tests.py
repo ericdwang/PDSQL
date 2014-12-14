@@ -43,6 +43,35 @@ class TestTableComposition(unittest.TestCase):
         self.assertFalse(t.has_query("_join"))
         self.assertFalse(self.t2.has_query("_join"))
 
+    def test_limiting(self):
+        query = self.t1.select(self.t1.c).order(self.t1.c)
+        self.assertEqual(
+            query[0].compile(),
+            'SELECT t1.c FROM t1 ORDER BY t1.c ASC LIMIT 1;')
+        self.assertEqual(
+            query[-1].compile(),
+            'SELECT t1.c FROM t1 ORDER BY t1.c DESC LIMIT 1;')
+        self.assertEqual(
+            query[:5].compile(),
+            'SELECT t1.c FROM t1 ORDER BY t1.c ASC LIMIT 5;')
+        self.assertEqual(
+            query[-5:].compile(),
+            'SELECT t1.c FROM t1 ORDER BY t1.c DESC LIMIT 5;')
+
+    def test_reverse(self):
+        query = self.t1.select(self.t1.c).order(self.t1.c)
+        self.assertEqual(
+            query.compile(),
+            'SELECT t1.c FROM t1 ORDER BY t1.c ASC;')
+        query = reversed(query)
+        self.assertEqual(
+            query.compile(),
+            'SELECT t1.c FROM t1 ORDER BY t1.c DESC;')
+        query = reversed(query)
+        self.assertEqual(
+            query.compile(),
+            'SELECT t1.c FROM t1 ORDER BY t1.c ASC;')
+
 
 class TestDatabaseQuery(unittest.TestCase):
     def setUp(self):
