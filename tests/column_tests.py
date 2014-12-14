@@ -15,8 +15,9 @@ class TestUnaryOps(unittest.TestCase):
         c = abs(self.c1)
         self.assertTrue(c.has_unary())
         self.assertFalse(self.c1.has_unary())
-        c = self.c1.abs()
-        self.assertRaises(Exception, c.__abs__)
+        c = abs(self.c1.abs())
+        self.assertTrue(c.has_unary())
+        self.assertFalse(self.c1.has_unary())
 
     def test_repr(self):
         print repr(self.c1+(self.c2-self.c2.sum()))

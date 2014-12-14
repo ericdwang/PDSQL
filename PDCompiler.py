@@ -142,13 +142,18 @@ def compile_to_sql(ast):
 
             # GROUP BY
             group_list = ['GROUP BY']
-            for col in [i[1] for i in ops if i[0] == '_group']:
+            group = [i[1] for i in ops if i[0] == '_group']
+            for col in group:
                 group_list += compilenode(col) + [',']
             group_list.pop()
 
             # HAVING
             having_list = ['HAVING']
-            for col in [i[1] for i in ops if i[0] == '_having']:
+            having = [i[1] for i in ops if i[0] == '_having']
+            # Must have a GROUP BY clause for HAVING
+            if having and not group:
+                raise Exception('Must have a GROUP BY clause if using HAVING')
+            for col in having:
                 having_list += ['('] + compilenode(col) + [')'] + ['AND']
             having_list.pop()
 

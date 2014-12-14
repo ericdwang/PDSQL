@@ -123,9 +123,13 @@ class PDTable(object):
         return self._set_query('_limit', lim)
 
     def where(self, column):
+        if column.has_aggregate():
+            raise Exception('Aggregation in WHERE clause not allowed')
         return self._set_query('_where', column)
 
     def group(self, column):
+        if column.has_aggregate():
+            raise Exception('Aggregation in GROUP BY clause not allowed')
         return self._set_query('_group', column)
 
     def join(self, tableB, cond=None):
@@ -136,6 +140,8 @@ class PDTable(object):
         return self._set_query('_having', column)
 
     def order(self, column):
+        if column.has_aggregate():
+            raise Exception('Aggregation in ORDER BY clause not allowed')
         return self._set_query('_order', column)
 
     def __reversed__(self):

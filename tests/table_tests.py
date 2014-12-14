@@ -106,6 +106,30 @@ class TestTableComposition(unittest.TestCase):
         self.assertEqual(
             t1.where(t1.col.not_null()).compile(),
             'SELECT * FROM t1 WHERE ( t1.col IS NOT NULL );')
+        self.assertRaises(
+            Exception,
+            t1.col.not_null().is_null)
+
+    def test_group(self):
+        t1 = self.t1
+        self.assertRaises(
+            Exception,
+            t1.having(t1.col == 1).compile)
+        t1.group(t1.col).having(t1.col == 1).compile()
+
+    def test_aggregation(self):
+        t1 = self.t1
+        t1.select(t1.col.sum())
+        t1.group(t1.col).having(t1.col.sum())
+        self.assertRaises(
+            Exception,
+            t1.where, t1.col.sum)
+        self.assertRaises(
+            Exception,
+            t1.group, t1.col.sum)
+        self.assertRaises(
+            Exception,
+            t1.order, t1.col.sum)
 
 
 class TestDatabaseQuery(unittest.TestCase):

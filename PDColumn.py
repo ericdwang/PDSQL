@@ -86,6 +86,7 @@ class PDColumn(object):
     # Aggregation Methods
     #
     # Invariant: Only one can be active at a time.
+    # Can only be used in SELECT and HAVING.
     ################################################################
 
     def has_aggregate(self):
@@ -136,8 +137,6 @@ class PDColumn(object):
 
     ################################################################
     # Unary Math Methods
-    #
-    # Invariant: Only one can be active at a time.
     ################################################################
 
     def has_unary(self):
@@ -151,12 +150,7 @@ class PDColumn(object):
         Helper function to set unary math ops, validating and doing any
         bookkeeping necessary.
         """
-        if self.has_unary():
-            # TODO: Determine if this is a valid restriction.
-            raise Exception('Attempting to assign multiple unary functions \
-                to same column')
-
-        elif op not in PDColumn.unary_list:
+        if op not in PDColumn.unary_list:
             raise Exception('Attempting to assign invalid unary function')
 
         else:
@@ -285,8 +279,7 @@ class PDColumn(object):
     ################################################################
     # Null Checking Methods
     #
-    # Invariant: Only one and no other methods of any type can be
-    # active
+    # Invariant: Only one null checking method can be called
     ################################################################
 
     def has_null(self):
@@ -300,8 +293,6 @@ class PDColumn(object):
         Helper function to set is null, validating and doing any
         bookkeeping necessary.
         """
-        if self.ops:
-            raise Exception('Only columns can be checked for null values')
         if self.has_null():
             raise Exception('Already checking column for null values')
 
