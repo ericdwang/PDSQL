@@ -18,35 +18,35 @@ class PDTable(object):
         If verbose is True, the compiled SQL query will be printed along with
         the results.
         """
-        self.name = name
-        self.cursor = cursor
+        self._name = name
+        self._cursor = cursor
 
         # List of tuples in order of operation (operation, column)
         self._operation_ordering = []
 
-        self.reverse_val = False
+        self._reverse_val = False
 
         self._compiled = False
-        self.query = None
+        self._query = None
 
     def __str__(self):
         """
         Compile the query and print it.
         """
-        if not self.cursor:
+        if not self._cursor:
             raise Exception(
                 'Attempting to execute query without setting database cursor '
                 'first')
 
         self.compile()
-        return self.query
+        return self._query
 
     def __repr__(self, level=0):
         """
         Returns a string representation of this table for debugging purposes.
         """
         s = "\t" * level
-        s += self.name + "\n"
+        s += self._name + "\n"
 
         for opTup in self._operation_ordering:
             op = opTup[0]
@@ -85,7 +85,7 @@ class PDTable(object):
         if not callable(execute_method):
             raise Exception(
                 'Database connector does not have an execute method')
-        self.cursor = cursor
+        self._cursor = cursor
 
     def compile(self):
         """
@@ -93,20 +93,20 @@ class PDTable(object):
         compiled.
         """
         if not self._compiled:
-            self.query = compile_to_sql(self)
+            self._query = compile_to_sql(self)
             self._compiled = True
 
     def run(self):
         """
         Compile the query, run it, and return the results.
         """
-        if not self.cursor:
+        if not self._cursor:
             raise Exception(
                 'Attempting to execute query without setting database cursor '
                 'first')
 
         self.compile()
-        return self.cursor.execute(self.query)
+        return self._cursor.execute(self._query)
 
     ################################################################
     # Query methods
@@ -178,15 +178,15 @@ class PDTable(object):
             raise Exception("Attempting to get column with non-string key")
 
     def __copy__(self):
-        new_table = PDTable(self.name)
+        new_table = PDTable(self._name)
         new_table.__dict__.update(self.__dict__)
         return new_table
 
     def __deepcopy__(self, memo):
-        new_table = PDTable(self.name)
-        new_table.reverse_val = copy.copy(self.reverse_val)
+        new_table = PDTable(self._name)
+        new_table._reverse_val = copy.copy(self._reverse_val)
         new_table._operation_ordering = copy.copy(self._operation_ordering)
-        new_table.cursor = self.cursor
+        new_table._cursor = self._cursor
         new_table._compiled = False
         return new_table
 

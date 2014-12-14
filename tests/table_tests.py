@@ -52,6 +52,8 @@ class TestDatabaseQuery(unittest.TestCase):
 
     def test_queries(self):
         st = self.states
+        query = st.select(st.name).where(st.statecode == 'CA')
+        self.assertEqual(query.run().fetchall(), [('California',)])
         query = st.select(st.population_2010) \
             .where((st.statecode == 'CA') | (st.statecode == 'NV')) \
             .order(st.landarea)

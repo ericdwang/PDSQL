@@ -82,8 +82,8 @@ def compile_to_sql(ast):
             # In the case where no children, fill strings with basic
             # information about the column.
             else:
-                if hasattr(node.table, 'name'):
-                    strings = [node.table.name + '.' + node.name]
+                if hasattr(node.table, '_name'):
+                    strings = [node.table._name + '.' + node.name]
                 else:
                     strings = [node.name]
 
@@ -118,10 +118,10 @@ def compile_to_sql(ast):
             from_list = ['FROM']
 
             if not join:
-                from_list += [node.name]
+                from_list += [node._name]
             else:
-                from_list += ['('] + [node.name] + ['INNER JOIN'] + \
-                    [join['table'].name]
+                from_list += ['('] + [node._name] + ['INNER JOIN'] + \
+                    [join['table']._name]
                 if join['cond']:
                     from_list += ['ON'] + compilenode(join['cond'])
                 from_list += [')']
@@ -149,10 +149,11 @@ def compile_to_sql(ast):
             for col in [i[1] for i in ops if i[0] == '_order']:
                 order_list += compilenode(col) + [',']
             order_list.pop()
-            if node.reverse_val and len(order_list) > 0:
-                order_list += ['DESC']
-            else:
-                order_list += ['ASC']
+            if len(order_list) > 0:
+                if node._reverse_val:
+                    order_list += ['DESC']
+                else:
+                    order_list += ['ASC']
 
             # LIMIT TODO: Need to enforce only one limit
             limit_list = []
