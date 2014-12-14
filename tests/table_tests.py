@@ -81,17 +81,17 @@ class TestTableComposition(unittest.TestCase):
             t1.select(t1.c1).compile(),
             'SELECT t1.c1 FROM t1;')
         self.assertEqual(
-            t1.select(c1=t1.c1).compile(),
+            t1.select(('c1', t1.c1)).compile(),
             'SELECT t1.c1 AS "c1" FROM t1;')
         self.assertEqual(
             t1.select(t1.c1, t1.c2).compile(),
             'SELECT t1.c1 , t1.c2 FROM t1;')
         self.assertEqual(
-            t1.select(t1.c1, c2=t1.c2).compile(),
+            t1.select(t1.c1, ('c2', t1.c2)).compile(),
             'SELECT t1.c1 , t1.c2 AS "c2" FROM t1;')
         self.assertEqual(
-            t1.select(c1=t1.c1, c2=t1.c2).compile(),
-            'SELECT t1.c2 AS "c2" , t1.c1 AS "c1" FROM t1;')
+            t1.select(('c1', t1.c1), ('c2', t1.c2)).compile(),
+            'SELECT t1.c1 AS "c1" , t1.c2 AS "c2" FROM t1;')
 
     def test_distinct(self):
         self.assertEqual(
