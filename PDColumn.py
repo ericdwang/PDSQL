@@ -76,9 +76,9 @@ class PDColumn(object):
 
     def __unicode__(self):
         """
-        Returns unicode representation of this column.
+        Same as __str__.
         """
-        raise NotImplementedError()
+        return str(self)
 
     ################################################################
     # Aggregation Methods

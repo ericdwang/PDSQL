@@ -1,4 +1,6 @@
+import sqlite3
 import unittest
+
 from PDSQL.PDTable import PDTable
 from PDSQL.PDColumn import PDColumn
 
@@ -40,6 +42,23 @@ class TestTableComposition(unittest.TestCase):
         self.assertTrue(ta2.has_query("_join"))
         self.assertFalse(t.has_query("_join"))
         self.assertFalse(self.t2.has_query("_join"))
+
+
+class TestDatabaseQuery(unittest.TestCase):
+    def setUp(self):
+        self.connection = sqlite3.connect('tests/db.sqlite3')
+        self.cursor = self.connection.cursor()
+        self.states = PDTable('states', cursor=self.cursor)
+
+    def test_queries(self):
+        st = self.states
+        query = st.select(st.population_2010) \
+            .where((st.statecode == 'CA') | (st.statecode == 'NV')) \
+            .order(st.landarea)
+        self.assertEqual(query.run().fetchall(), [(2700551,), (37253956,)])
+
+    def tearDown(self):
+        self.connection.close()
 
 
 if __name__ == '__main__':

@@ -1,6 +1,7 @@
 import copy
 
 from PDColumn import PDColumn
+from PDCompiler import compile_to_sql
 
 
 class PDTable(object):
@@ -10,26 +11,39 @@ class PDTable(object):
         '_limit', '_where', '_select', '_group', '_join', '_having', '_order'
     )
 
-    def __init__(self, name):
+    def __init__(self, name, cursor=None):
         """
-        Initializes tables to be empty. Requires name
+        Initializes tables to be empty. Requires name, database cursor optional.
+
+        If verbose is True, the compiled SQL query will be printed along with
+        the results.
         """
         self.name = name
+        self.cursor = cursor
 
         # List of tuples in order of operation (operation, column)
         self._operation_ordering = []
 
         self.reverse_val = False
 
+        self._compiled = False
+        self.query = None
+
     def __str__(self):
         """
-        Returns string representation of this table
+        Compile the query and print it.
         """
-        raise NotImplementedError()
+        if not self.cursor:
+            raise Exception(
+                'Attempting to execute query without setting database cursor '
+                'first')
+
+        self.compile()
+        return self.query
 
     def __repr__(self, level=0):
         """
-        Returns a string representation of this table
+        Returns a string representation of this table for debugging purposes.
         """
         s = "\t" * level
         s += self.name + "\n"
@@ -55,9 +69,44 @@ class PDTable(object):
 
     def __unicode__(self):
         """
-        Returns unicode representation of this column.
+        Same as __str__.
         """
-        raise NotImplementedError()
+        return str(self)
+
+    ################################################################
+    # Database methods
+    ################################################################
+
+    def set_cursor(self, cursor):
+        """
+        Set the database cursor for this table to be used for executing queries.
+        """
+        execute_method = getattr(cursor, 'execute')
+        if not callable(execute_method):
+            raise Exception(
+                'Database connector does not have an execute method')
+        self.cursor = cursor
+
+    def compile(self):
+        """
+        Compile the underlying query to SQL, checking first if it was already
+        compiled.
+        """
+        if not self._compiled:
+            self.query = compile_to_sql(self)
+            self._compiled = True
+
+    def run(self):
+        """
+        Compile the query, run it, and return the results.
+        """
+        if not self.cursor:
+            raise Exception(
+                'Attempting to execute query without setting database cursor '
+                'first')
+
+        self.compile()
+        return self.cursor.execute(self.query)
 
     ################################################################
     # Query methods
@@ -137,6 +186,8 @@ class PDTable(object):
         new_table = PDTable(self.name)
         new_table.reverse_val = copy.copy(self.reverse_val)
         new_table._operation_ordering = copy.copy(self._operation_ordering)
+        new_table.cursor = self.cursor
+        new_table._compiled = False
         return new_table
 
     def __nonzero__(self):

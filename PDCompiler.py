@@ -1,8 +1,5 @@
 import copy
 
-from PDColumn import PDColumn
-from PDTable import PDTable
-
 
 # Does not have not -- must be desugared down.
 unary_map = {
@@ -48,6 +45,10 @@ _uniquegen_counter = 0
 
 # Structure taken from Berkeley's Fall 2014 CS164 projects
 def compile_to_sql(ast):
+    # Import here to avoid circular imports
+    from PDColumn import PDColumn
+    from PDTable import PDTable
+
     def uniquegen():
         global _uniquegen_counter
         _uniquegen_counter += 1
@@ -165,14 +166,14 @@ def compile_to_sql(ast):
             new_elements = []
             for item in node:
                 if isinstance(item, basestring):
-                    new_elements += ['\'' + item + '\'']
+                    new_elements += ['"' + item + '"']
                 else:
                     new_elements += [str(item)]
             new_elements = ','.join(new_elements)
             strings = ['(' + new_elements + ')']
 
         elif isinstance(node, basestring):
-            strings = ['\'' + node + '\'']
+            strings = ['"' + node + '"']
 
         else:
             strings = [str(node)]
