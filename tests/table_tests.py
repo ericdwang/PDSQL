@@ -56,6 +56,8 @@ class TestTableComposition(unittest.TestCase):
         self.assertEqual(
             query[-5:].compile(),
             'SELECT t1.c FROM t1 ORDER BY t1.c DESC LIMIT 5;')
+        self.assertRaises(Exception, query.limit, 'test')
+        self.assertRaises(Exception, query.limit(1).limit, 2)
 
     def test_reverse(self):
         query = self.t1.select(self.t1.c).order(self.t1.c)
@@ -120,7 +122,6 @@ class TestTableComposition(unittest.TestCase):
         t1.group(t1.col).having(t1.col.sum())
         self.assertRaises(Exception, t1.where, t1.col.sum())
         self.assertRaises(Exception, t1.group, t1.col.sum())
-        self.assertRaises(Exception, t1.order, t1.col.sum())
         self.assertRaises(Exception, t1.join, 'test')
         t1.join(self.t2)
 
@@ -189,6 +190,42 @@ class TestDatabaseQuery(unittest.TestCase):
             .where((st.statecode == 'CA') | (st.statecode == 'NV')) \
             .order(st.landarea)
         self.assertEqual(query.run().fetchall(), [(2700551,), (37253956,)])
+
+    def tearDown(self):
+        self.connection.close()
+
+
+class TestQueries(unittest.TestCase):
+    def setUp(self):
+        self.connection = sqlite3.connect('tests/db.sqlite3')
+        self.cursor = self.connection.cursor()
+        self.states = PDTable('states', cursor=self.cursor)
+        self.counties = PDTable('counties', cursor=self.cursor)
+        self.senators = PDTable('senators', cursor=self.cursor)
+        self.committees = PDTable('committees', cursor=self.cursor)
+
+    def test_query1(self):
+        print('Query 1')
+        c = self.counties
+        counties = reversed(
+            c.select(c.statecode, c.name, c.population_2010)
+             .where(c.population_2010 > 2000000)
+             .order(c.population_2010))
+        print(counties)
+        print('')
+        for county in counties.run():
+            print('{}|{}|{}'.format(county[0], county[1], county[2]))
+
+    def test_query2(self):
+        print('\nQuery 2')
+        c = self.counties
+        counties = c.select(c.statecode, c.count()) \
+                    .group(c.statecode) \
+                    .order(c.count())
+        print(counties)
+        print('')
+        for county in counties.run():
+            print('{}|{}'.format(county[0], county[1]))
 
     def tearDown(self):
         self.connection.close()

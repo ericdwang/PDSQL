@@ -37,6 +37,7 @@ class PDTable(object):
 
         self._reverse_val = False
         self._distinct = False
+        self._limit = None
         self._binary_op = None
         self._children = []
 
@@ -138,10 +139,17 @@ class PDTable(object):
     def _check_aggregate(self, column, clause):
         if isinstance(column, PDColumn) and column.has_aggregate():
             raise Exception(
-                'Aggregation in {} clause not allowed').format(clause)
+                'Aggregation in {} clause not allowed'.format(clause))
 
     def limit(self, lim):
-        return self._set_query('_limit', lim)
+        if not isinstance(lim, int):
+            raise Exception('Only integers accepted in LIMIT clause')
+        if self._limit is not None:
+            raise Exception('Only one LIMIT clause allowed in queries')
+
+        new_table = copy.deepcopy(self)
+        new_table._limit = lim
+        return new_table
 
     def where(self, column):
         self._check_aggregate(column, 'WHERE')
@@ -161,7 +169,6 @@ class PDTable(object):
         return self._set_query('_having', column)
 
     def order(self, column):
-        self._check_aggregate(column, 'ORDER BY')
         return self._set_query('_order', column)
 
     def __reversed__(self):
@@ -196,6 +203,10 @@ class PDTable(object):
         new_table._distinct = True
         return new_table
 
+    def count(self):
+        """Returns a PDColumn equal to COUNT(*)."""
+        return PDColumn('*', self).count()
+
     ################################################################
     # Magic methods
     ################################################################
@@ -219,7 +230,7 @@ class PDTable(object):
             elif key == -1:
                 table_copy = copy.deepcopy(self)
                 table_copy._reverse_val = not self._reverse_val
-                table_copy._operation_ordering.append(('_limit', 1))
+                table_copy._limit = 1
                 return table_copy
             else:
                 raise Exception(
@@ -233,8 +244,7 @@ class PDTable(object):
             elif key.start < 0 and not key.stop:
                 table_copy = copy.deepcopy(self)
                 table_copy._reverse_val = not self._reverse_val
-                table_copy._operation_ordering.append(
-                    ('_limit', abs(key.start)))
+                table_copy._limit = abs(key.start)
                 return table_copy
 
         else:
@@ -254,6 +264,7 @@ class PDTable(object):
         new_table._compiled = False
         new_table._binary_op = copy.copy(self._binary_op)
         new_table._children = copy.copy(self._children)
+        new_table._limit = copy.copy(self._limit)
         return new_table
 
     def __nonzero__(self):

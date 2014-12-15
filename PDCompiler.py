@@ -131,7 +131,7 @@ def compile_to_sql(ast):
             # In the case where no children, fill strings with basic
             # information about the column.
             else:
-                if hasattr(node.table, '_name'):
+                if hasattr(node.table, '_name') and not node._count:
                     strings = [node.table._name + '.' + node.name]
                 else:
                     strings = [node.name]
@@ -228,10 +228,9 @@ def compile_to_sql(ast):
                 else:
                     order_list += ['ASC']
 
-            # LIMIT TODO: Need to enforce only one limit
             limit_list = []
-            for col in [i[1] for i in ops if i[0] == '_limit']:
-                limit_list += ['LIMIT'] + compilenode(col)
+            if node._limit is not None:
+                limit_list += ['LIMIT', str(node._limit)]
 
             strings = ['('] + select_list + from_list + where_list + group_list + \
                 having_list + order_list + limit_list + [')']

@@ -36,6 +36,11 @@ class PDColumn(object):
         self._binary_op = None
         self.null = None
 
+        if name == '*':
+            self._count = True
+        else:
+            self._count = False
+
         self.table = table
         self.name = name
         self._children = []
