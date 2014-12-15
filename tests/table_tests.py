@@ -146,10 +146,29 @@ class TestTableComposition(unittest.TestCase):
             'SELECT * FROM t1 WHERE ( ( '
             't1.col = ( SELECT MAX( t1.col ) FROM t1 ) ) );')
         self.assertEqual(
+            t1.where(t1.select(t1.col.max()) == t1.col).compile(),
+            'SELECT * FROM t1 WHERE ( ( '
+            '( SELECT MAX( t1.col ) FROM t1 ) = t1.col ) );')
+        self.assertEqual(
             t1.group(t1.col)
               .having(t1.col.avg() > t1.select(t1.col.avg())).compile(),
             'SELECT * FROM t1 GROUP BY t1.col HAVING ( ( AVG( t1.col ) > ( '
             'SELECT AVG( t1.col ) FROM t1 ) ) );')
+
+    def test_set_operations(self):
+        t1 = self.t1
+        t2 = self.t2
+        self.assertEqual(
+            t1.union(t2).compile(),
+            '( SELECT * FROM t1 ) UNION ( SELECT * FROM t2 );')
+        self.assertEqual(
+            t1.intersect(t2.where(t2.col > 1)).compile(),
+            '( SELECT * FROM t1 ) INTERSECT '
+            '( SELECT * FROM t2 WHERE ( ( t2.col > 1 ) ) );')
+        self.assertEqual(
+            t1.select(t1.col).except_(t2.where(t2.col > 1)).compile(),
+            '( SELECT t1.col FROM t1 ) EXCEPT '
+            '( SELECT * FROM t2 WHERE ( ( t2.col > 1 ) ) );')
 
 
 class TestDatabaseQuery(unittest.TestCase):

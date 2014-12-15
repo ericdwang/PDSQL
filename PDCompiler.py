@@ -33,7 +33,10 @@ binary_middle_map = {
     '_ge': '>=',
     '_in': 'IN',
     '_between': 'BETWEEN',
-    '_like': 'LIKE'
+    '_like': 'LIKE',
+    '_union': 'UNION',
+    '_intersect': 'INTERSECT',
+    '_except': 'EXCEPT',
 }
 
 binary_function_map = {

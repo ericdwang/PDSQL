@@ -18,7 +18,8 @@ class PDTable(object):
     # raw equivalent.
     binary_list = (
         '_add', '_sub', '_mul', '_div', '_mod', '_concat', '_or', '_and',
-        '_eq', '_ne', '_lt', '_gt', '_le', '_ge', '_in', '_between', '_like'
+        '_eq', '_ne', '_lt', '_gt', '_le', '_ge', '_in', '_between', '_like',
+        '_union', '_intersect', '_except'
     )
 
     def __init__(self, name, cursor=None):
@@ -251,6 +252,8 @@ class PDTable(object):
         new_table._operation_ordering = copy.copy(self._operation_ordering)
         new_table._cursor = self._cursor
         new_table._compiled = False
+        new_table._binary_op = copy.copy(self._binary_op)
+        new_table._children = copy.copy(self._children)
         return new_table
 
     def __nonzero__(self):
@@ -282,7 +285,7 @@ class PDTable(object):
             raise Exception('Attempting to assign invalid binary function')
 
         else:
-            new_table = PDTable()
+            new_table = PDTable(self._name)
             new_table._binary_op = op
             setattr(new_table, op, True)
 
@@ -292,6 +295,11 @@ class PDTable(object):
             new_table._children.append(t1)
             new_table._children.append(t2)
             return new_table
+
+    def _check_table(self, table, clause):
+        if not isinstance(table, PDTable):
+            raise Exception(
+                'Only subqueries accepted in {} clause'.format(clause))
 
     def __add__(self, other):
         return self._set_binary('_add', other)
@@ -345,3 +353,16 @@ class PDTable(object):
 
     def like(self, other):
         return self._set_binary('_like', other)
+
+    def union(self, other):
+        self._check_table(other, '_union')
+        return self._set_binary('_union', other)
+
+    def intersect(self, other):
+        self._check_table(other, '_intersect')
+        return self._set_binary('_intersect', other)
+
+    # except_ is used because 'except' is a keyword in python.
+    def except_(self, other):
+        self._check_table(other, '_except')
+        return self._set_binary('_except', other)
