@@ -139,6 +139,18 @@ class TestTableComposition(unittest.TestCase):
             'SELECT * FROM ( t1 INNER JOIN ( SELECT * FROM '
             '( t2 INNER JOIN t3 ) ) );')
 
+    def test_subqueries(self):
+        t1 = self.t1
+        self.assertEqual(
+            t1.where(t1.col == t1.select(t1.col.max())).compile(),
+            'SELECT * FROM t1 WHERE ( ( '
+            't1.col = ( SELECT MAX( t1.col ) FROM t1 ) ) );')
+        self.assertEqual(
+            t1.group(t1.col)
+              .having(t1.col.avg() > t1.select(t1.col.avg())).compile(),
+            'SELECT * FROM t1 GROUP BY t1.col HAVING ( ( AVG( t1.col ) > ( '
+            'SELECT AVG( t1.col ) FROM t1 ) ) );')
+
 
 class TestDatabaseQuery(unittest.TestCase):
     def setUp(self):

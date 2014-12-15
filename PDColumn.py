@@ -33,12 +33,12 @@ class PDColumn(object):
         """
         self.agg = None
         self.unary_op = None
-        self.binary_op = None
+        self._binary_op = None
         self.null = None
 
         self.table = table
         self.name = name
-        self.children = []
+        self._children = []
         self.ops = []
 
     ################################################################
@@ -57,15 +57,15 @@ class PDColumn(object):
             s += ' agg:' + self.agg
         if self.unary_op:
             s += ' unary:' + self.unary_op
-        if self.binary_op:
-            s += ' binary:' + self.binary_op
+        if self._binary_op:
+            s += ' binary:' + self._binary_op
         return s
 
     def _repr_helper(self, level=0):
         s = "\t" * level
         s += str(self)
         s += "\n"
-        for child in self.children:
+        for child in self._children:
             if isinstance(child, PDColumn):
                 s += child._repr_helper(level=level + 1)
             else:
@@ -204,7 +204,7 @@ class PDColumn(object):
         """
         Returns true if column has an binary op set. False otherwise.
         """
-        return bool(self.binary_op)
+        return bool(self._binary_op)
 
     def _set_binary(self, op, other):
         """
@@ -216,14 +216,14 @@ class PDColumn(object):
 
         else:
             new_col = PDColumn()
-            new_col.binary_op = op
+            new_col._binary_op = op
             setattr(new_col, op, True)
 
             c1 = copy.copy(self)
             c2 = copy.copy(other)
 
-            new_col.children.append(c1)
-            new_col.children.append(c2)
+            new_col._children.append(c1)
+            new_col._children.append(c2)
             return new_col
 
     def __add__(self, other):

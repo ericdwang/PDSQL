@@ -44,7 +44,7 @@ _uniquegen_counter = 0
 
 
 # Structure taken from Berkeley's Fall 2014 CS164 projects
-def compile_to_sql(ast, semicolon=False):
+def compile_to_sql(ast):
     # Import here to avoid circular imports
     from PDColumn import PDColumn
     from PDTable import PDTable
@@ -54,30 +54,63 @@ def compile_to_sql(ast, semicolon=False):
         _uniquegen_counter += 1
         return '#reg-' + str(_uniquegen_counter)
 
+    def apply_children(node, func):
+        if isinstance(node, PDColumn):
+            func(node)
+            for child in node._children:
+                apply_children(child, func)
+
+        elif isinstance(node, PDTable):
+            func(node)
+            ops = node._operation_ordering
+            for op in ops:
+                if op[0] == '_select':
+                    for col in op[1]:
+                        apply_children(col['column'], func)
+                else:
+                    apply_children(op[1], func)
+
+        elif hasattr(node, '__iter__'):
+            for child in node:
+                apply_children(child, func)
+
+    def rewrite_select(node):
+        if isinstance(node, PDTable):
+            ops = node._operation_ordering
+            if len([i[1] for i in ops if i[0] == '_select']) == 0:
+                node._operation_ordering.append(
+                    ('_select', [{'column': PDColumn(name='*')}]))
+
+    def get_binary_op_strings(node):
+        children = [compilenode(child) for child in node._children]
+
+        # Switch on all binary ops
+
+        if node._binary_op in binary_middle_map:
+            strings = ['('] + children[0] + \
+                [binary_middle_map[node._binary_op]] + \
+                children[1] + [')']
+
+        elif node._binary_op in binary_function_map:
+            strings = [binary_function_map[node._binary_op] + '('] + \
+                children[0] + [','] + children[1] + [')']
+
+        else:
+            raise Exception(
+                "AST column contains unrecognized binary op: "
+                + node._binary_op)
+        return strings
+
     def compilenode(node):
+        node = copy.deepcopy(node)
+        apply_children(node, rewrite_select)
+
         strings = []
-        children = []
 
         if isinstance(node, PDColumn):
 
-            if len(node.children) > 0:
-                children = [compilenode(child) for child in node.children]
-
-                # Switch on all binary ops
-
-                if node.binary_op in binary_middle_map:
-                    strings = ['('] + children[0] + \
-                        [binary_middle_map[node.binary_op]] + \
-                        children[1] + [')']
-
-                elif node.binary_op in binary_function_map:
-                    strings = [binary_function_map[node.binary_op] + '('] + \
-                        children[0] + [','] + children[1] + [')']
-
-                else:
-                    raise Exception(
-                        "AST column contains unrecognized binary op: "
-                        + node.binary_op)
+            if len(node._children) > 0:
+                strings = get_binary_op_strings(node)
 
             # In the case where no children, fill strings with basic
             # information about the column.
@@ -104,6 +137,10 @@ def compile_to_sql(ast, semicolon=False):
                 strings.append('IS NOT NULL')
 
         elif isinstance(node, PDTable):
+
+            if len(node._children) > 0:
+                return get_binary_op_strings(node)
+
             ops = node._operation_ordering
 
             # SELECT
@@ -136,8 +173,7 @@ def compile_to_sql(ast, semicolon=False):
                         from_list.append(
                             'INNER JOIN {}'.format(table._name))
                     else:
-                        from_list.append(
-                            'INNER JOIN ( {} )'.format(compile_to_sql(table)))
+                        from_list += ['INNER JOIN'] + compilenode(table)
                     if join['cond']:
                         from_list += ['ON'] + compilenode(join['cond'])
                 from_list += [')']
@@ -181,8 +217,8 @@ def compile_to_sql(ast, semicolon=False):
             for col in [i[1] for i in ops if i[0] == '_limit']:
                 limit_list += ['LIMIT'] + compilenode(col)
 
-            strings = select_list + from_list + where_list + group_list + \
-                having_list + order_list + limit_list
+            strings = ['('] + select_list + from_list + where_list + group_list + \
+                having_list + order_list + limit_list + [')']
 
         elif isinstance(node, tuple):
             new_elements = []
@@ -202,36 +238,6 @@ def compile_to_sql(ast, semicolon=False):
 
         return strings
 
-    def apply_children(node, func):
-        if isinstance(node, PDColumn):
-            func(node)
-            for child in node.children:
-                apply_children(child, func)
-
-        elif isinstance(node, PDTable):
-            func(node)
-            ops = node._operation_ordering
-            for op in ops:
-                if op[0] == '_select':
-                    for col in op[1]:
-                        apply_children(col['column'], func)
-                else:
-                    apply_children(op[1], func)
-
-        elif hasattr(node, '__iter__'):
-            for child in node:
-                apply_children(child, func)
-
-    def rewrite_select(node):
-        if isinstance(node, PDTable):
-            ops = node._operation_ordering
-            if len([i[1] for i in ops if i[0] == '_select']) == 0:
-                node._operation_ordering.append(
-                    ('_select', [{'column': PDColumn(name='*')}]))
-
-    ast = copy.deepcopy(ast)
-    apply_children(ast, rewrite_select)
-    statement = ' '.join(compilenode(ast))
-    if semicolon:
-        statement += ';'
-    return statement
+    # Strip off the leading and trailing and parenthesis
+    strings = compilenode(ast)[1:-1]
+    return ' '.join(strings) + ';'

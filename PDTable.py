@@ -11,6 +11,16 @@ class PDTable(object):
         '_limit', '_where', '_select', '_group', '_join', '_having', '_order'
     )
 
+    # Binary operators.
+    #
+    # These will be available using raw python syntax when possible, e.g.,
+    # col1 + col2, with the exception of methods like concat which have no
+    # raw equivalent.
+    binary_list = (
+        '_add', '_sub', '_mul', '_div', '_mod', '_concat', '_or', '_and',
+        '_eq', '_ne', '_lt', '_gt', '_le', '_ge', '_in', '_between', '_like'
+    )
+
     def __init__(self, name, cursor=None):
         """
         Initializes tables to be empty. Requires name, database cursor optional.
@@ -26,6 +36,8 @@ class PDTable(object):
 
         self._reverse_val = False
         self._distinct = False
+        self._binary_op = None
+        self._children = []
 
         self._compiled = False
         self._query = None
@@ -92,7 +104,7 @@ class PDTable(object):
         compiled.
         """
         if not self._compiled:
-            self._query = compile_to_sql(self, semicolon=True)
+            self._query = compile_to_sql(self)
             self._compiled = True
         return self._query
 
@@ -244,3 +256,92 @@ class PDTable(object):
     def __nonzero__(self):
         # Always truthy if this exists.
         return True
+
+    ################################################################
+    # Binary Math Methods
+    #
+    # Returns a new PDTable object that represents the combined
+    # operation. For instance, table1 + table2 will return a new
+    # PDTable instance that points
+    #
+    # Invariant: Only one binary op exists, exactly 2 children
+    ################################################################
+
+    def has_binary(self):
+        """
+        Returns true if column has an binary op set. False otherwise.
+        """
+        return bool(self.binary_op)
+
+    def _set_binary(self, op, other):
+        """
+        Helper function to set binary ops, validating and doing any
+        bookkeeping necessary.
+        """
+        if op not in PDTable.binary_list:
+            raise Exception('Attempting to assign invalid binary function')
+
+        else:
+            new_table = PDTable()
+            new_table._binary_op = op
+            setattr(new_table, op, True)
+
+            t1 = copy.copy(self)
+            t2 = copy.copy(other)
+
+            new_table._children.append(t1)
+            new_table._children.append(t2)
+            return new_table
+
+    def __add__(self, other):
+        return self._set_binary('_add', other)
+
+    def __sub__(self, other):
+        return self._set_binary('_sub', other)
+
+    def __mul__(self, other):
+        return self._set_binary('_mul', other)
+
+    def __div__(self, other):
+        return self._set_binary('_div', other)
+
+    def __mod__(self, other):
+        return self._set_binary('_mod', other)
+
+    def __and__(self, other):
+        return self._set_binary('_and', other)
+
+    def __or__(self, other):
+        return self._set_binary('_or', other)
+
+    def concat(self, other):
+        return self._set_binary('_concat', other)
+
+    def __eq__(self, other):
+        return self._set_binary('_eq', other)
+
+    def __ne__(self, other):
+        return self._set_binary('_ne', other)
+
+    def __lt__(self, other):
+        return self._set_binary('_lt', other)
+
+    def __gt__(self, other):
+        return self._set_binary('_gt', other)
+
+    def __le__(self, other):
+        return self._set_binary('_le', other)
+
+    def __ge__(self, other):
+        return self._set_binary('_ge', other)
+
+    # in_ is used because 'in' is a keyword in python. You can override
+    # the __contains__ operator, but it always casts results to bools.
+    def in_(self, other):
+        return self._set_binary('_in', other)
+
+    def between(self, other):
+        return self._set_binary('_between', other)
+
+    def like(self, other):
+        return self._set_binary('_like', other)
