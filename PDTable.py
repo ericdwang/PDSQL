@@ -37,10 +37,7 @@ class PDTable(object):
         self.compile()
         return self._query
 
-    def __repr__(self, level=0):
-        """
-        Returns a string representation of this table for debugging purposes.
-        """
+    def _repr_helper(self, level=0):
         s = "\t" * level
         s += self._name + "\n"
 
@@ -49,7 +46,7 @@ class PDTable(object):
             col = opTup[1]
             s += "\t" * (level + 1) + op + ": \n"
             if op == '_join':
-                b = col.__repr__(level + 1)
+                b = col._repr_helper(level=level + 1)
                 s += "\t" + b
             elif op == '_select':
                 for d in col:
@@ -62,6 +59,12 @@ class PDTable(object):
                 s += "\t" * (level + 1) + str(col)
             s += "\n"
         return s
+
+    def __repr__(self, level=0):
+        """
+        Returns a string representation of this table for debugging purposes.
+        """
+        return str(self)
 
     def __unicode__(self):
         """
@@ -89,7 +92,7 @@ class PDTable(object):
         compiled.
         """
         if not self._compiled:
-            self._query = compile_to_sql(self)
+            self._query = compile_to_sql(self, semicolon=True)
             self._compiled = True
         return self._query
 
@@ -119,20 +122,25 @@ class PDTable(object):
         table_copy._operation_ordering.append((query, column))
         return table_copy
 
+    def _check_aggregate(self, column, clause):
+        if isinstance(column, PDColumn) and column.has_aggregate():
+            raise Exception(
+                'Aggregation in {} clause not allowed').format(clause)
+
     def limit(self, lim):
         return self._set_query('_limit', lim)
 
     def where(self, column):
-        if column.has_aggregate():
-            raise Exception('Aggregation in WHERE clause not allowed')
+        self._check_aggregate(column, 'WHERE')
         return self._set_query('_where', column)
 
     def group(self, column):
-        if column.has_aggregate():
-            raise Exception('Aggregation in GROUP BY clause not allowed')
+        self._check_aggregate(column, 'GROUP BY')
         return self._set_query('_group', column)
 
     def join(self, tableB, cond=None):
+        if not isinstance(tableB, PDTable):
+            raise Exception('Only tables accepted in JOIN clause')
         join_dict = {'table': tableB, 'cond': cond}
         return self._set_query('_join', join_dict)
 
@@ -140,8 +148,7 @@ class PDTable(object):
         return self._set_query('_having', column)
 
     def order(self, column):
-        if column.has_aggregate():
-            raise Exception('Aggregation in ORDER BY clause not allowed')
+        self._check_aggregate(column, 'ORDER BY')
         return self._set_query('_order', column)
 
     def __reversed__(self):

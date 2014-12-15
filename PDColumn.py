@@ -61,20 +61,23 @@ class PDColumn(object):
             s += ' binary:' + self.binary_op
         return s
 
-    def __repr__(self, level=0):
-        """
-        Returns a string representation of this column (in terms of AST for
-        devs).
-        """
+    def _repr_helper(self, level=0):
         s = "\t" * level
         s += str(self)
         s += "\n"
         for child in self.children:
             if isinstance(child, PDColumn):
-                s += child.__repr__(level + 1)
+                s += child._repr_helper(level=level + 1)
             else:
                 s += "\t" * (level + 1) + repr(child)
         return s
+
+    def __repr__(self):
+        """
+        Returns a string representation of this column (in terms of AST for
+        devs).
+        """
+        return str(self)
 
     def __unicode__(self):
         """

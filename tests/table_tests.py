@@ -27,11 +27,10 @@ class TestTableComposition(unittest.TestCase):
         c1 = (t1.col1 == 4)
         c2 = ~(t1.col2.in_(('a', 'b')))
         c1_2 = c1 | c2
-        c3 = t1.col1.count()
         c4 = t1.col3.sum()
         q = t1.where(c1_2)
         print repr(q)
-        q2 = q.select(c4, sum=c4)
+        q2 = q.select(c4, ('sum', c4))
         print repr(q2)
 
     def test_has_query(self):
@@ -106,9 +105,7 @@ class TestTableComposition(unittest.TestCase):
         self.assertEqual(
             t1.where(t1.col.not_null()).compile(),
             'SELECT * FROM t1 WHERE ( t1.col IS NOT NULL );')
-        self.assertRaises(
-            Exception,
-            t1.col.not_null().is_null)
+        self.assertRaises(Exception, t1.col.not_null().is_null)
 
     def test_group(self):
         t1 = self.t1
@@ -117,19 +114,30 @@ class TestTableComposition(unittest.TestCase):
             t1.having(t1.col == 1).compile)
         t1.group(t1.col).having(t1.col == 1).compile()
 
-    def test_aggregation(self):
+    def test_querying_restrictions(self):
         t1 = self.t1
         t1.select(t1.col.sum())
         t1.group(t1.col).having(t1.col.sum())
-        self.assertRaises(
-            Exception,
-            t1.where, t1.col.sum)
-        self.assertRaises(
-            Exception,
-            t1.group, t1.col.sum)
-        self.assertRaises(
-            Exception,
-            t1.order, t1.col.sum)
+        self.assertRaises(Exception, t1.where, t1.col.sum())
+        self.assertRaises(Exception, t1.group, t1.col.sum())
+        self.assertRaises(Exception, t1.order, t1.col.sum())
+        self.assertRaises(Exception, t1.join, 'test')
+        t1.join(self.t2)
+
+    def test_join(self):
+        t1 = self.t1
+        t2 = self.t2
+        t3 = self.t3
+        self.assertEqual(
+            t1.join(t2).compile(), 'SELECT * FROM ( t1 INNER JOIN t2 );')
+        self.assertEqual(
+            t1.join(t2.where(t2.col == 1)).compile(),
+            'SELECT * FROM ( t1 INNER JOIN '
+            '( SELECT * FROM t2 WHERE ( ( t2.col = 1 ) ) ) );')
+        self.assertEqual(
+            t1.join(t2.join(t3)).compile(),
+            'SELECT * FROM ( t1 INNER JOIN ( SELECT * FROM '
+            '( t2 INNER JOIN t3 ) ) );')
 
 
 class TestDatabaseQuery(unittest.TestCase):

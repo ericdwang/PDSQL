@@ -44,7 +44,7 @@ _uniquegen_counter = 0
 
 
 # Structure taken from Berkeley's Fall 2014 CS164 projects
-def compile_to_sql(ast):
+def compile_to_sql(ast, semicolon=False):
     # Import here to avoid circular imports
     from PDColumn import PDColumn
     from PDTable import PDTable
@@ -121,17 +121,25 @@ def compile_to_sql(ast):
             select_list.pop()
 
             # FROM + JOIN
-            join = [i[1] for i in ops if i[0] == '_join']
+            joins = [i[1] for i in ops if i[0] == '_join']
 
             from_list = ['FROM']
 
-            if not join:
+            if not joins:
                 from_list += [node._name]
             else:
-                from_list += ['('] + [node._name] + ['INNER JOIN'] + \
-                    [join['table']._name]
-                if join['cond']:
-                    from_list += ['ON'] + compilenode(join['cond'])
+                from_list += ['('] + [node._name]
+                for join in joins:
+                    table = join['table']
+                    # No operations on the table, so just use the name
+                    if len(table._operation_ordering) == 0:
+                        from_list.append(
+                            'INNER JOIN {}'.format(table._name))
+                    else:
+                        from_list.append(
+                            'INNER JOIN ( {} )'.format(compile_to_sql(table)))
+                    if join['cond']:
+                        from_list += ['ON'] + compilenode(join['cond'])
                 from_list += [')']
 
             # WHERE
@@ -223,4 +231,7 @@ def compile_to_sql(ast):
 
     ast = copy.deepcopy(ast)
     apply_children(ast, rewrite_select)
-    return " ".join(compilenode(ast)) + ';'
+    statement = ' '.join(compilenode(ast))
+    if semicolon:
+        statement += ';'
+    return statement
