@@ -34,13 +34,16 @@ binary_middle_map = {
     '_in': 'IN',
     '_between': 'BETWEEN',
     '_like': 'LIKE',
-    '_union': 'UNION',
-    '_intersect': 'INTERSECT',
-    '_except': 'EXCEPT',
 }
 
 binary_function_map = {
     '_mod': 'MOD'
+}
+
+binary_set_map = {
+    '_union': 'UNION',
+    '_intersect': 'INTERSECT',
+    '_except': 'EXCEPT',
 }
 
 _uniquegen_counter = 0
@@ -84,6 +87,11 @@ def compile_to_sql(ast):
                 node._operation_ordering.append(
                     ('_select', [{'column': PDColumn(name='*')}]))
 
+    def strip_parens(strings):
+        if strings[0] == '(' and strings[-1] == ')':
+            return strings[1:-1]
+        return strings
+
     def get_binary_op_strings(node):
         children = [compilenode(child) for child in node._children]
 
@@ -97,6 +105,11 @@ def compile_to_sql(ast):
         elif node._binary_op in binary_function_map:
             strings = [binary_function_map[node._binary_op] + '('] + \
                 children[0] + [','] + children[1] + [')']
+
+        elif node._binary_op in binary_set_map:
+            strings = strip_parens(children[0]) + \
+                [binary_set_map[node._binary_op]] + \
+                strip_parens(children[1])
 
         else:
             raise Exception(
@@ -241,6 +254,5 @@ def compile_to_sql(ast):
 
         return strings
 
-    # Strip off the leading and trailing and parenthesis
-    strings = compilenode(ast)[1:-1]
+    strings = strip_parens(compilenode(ast))
     return ' '.join(strings) + ';'

@@ -158,17 +158,21 @@ class TestTableComposition(unittest.TestCase):
     def test_set_operations(self):
         t1 = self.t1
         t2 = self.t2
+        t3 = self.t3
         self.assertEqual(
             t1.union(t2).compile(),
-            '( SELECT * FROM t1 ) UNION ( SELECT * FROM t2 );')
+            'SELECT * FROM t1 UNION SELECT * FROM t2;')
         self.assertEqual(
             t1.intersect(t2.where(t2.col > 1)).compile(),
-            '( SELECT * FROM t1 ) INTERSECT '
-            '( SELECT * FROM t2 WHERE ( ( t2.col > 1 ) ) );')
+            'SELECT * FROM t1 INTERSECT '
+            'SELECT * FROM t2 WHERE ( ( t2.col > 1 ) );')
         self.assertEqual(
             t1.select(t1.col).except_(t2.where(t2.col > 1)).compile(),
-            '( SELECT t1.col FROM t1 ) EXCEPT '
-            '( SELECT * FROM t2 WHERE ( ( t2.col > 1 ) ) );')
+            'SELECT t1.col FROM t1 EXCEPT '
+            'SELECT * FROM t2 WHERE ( ( t2.col > 1 ) );')
+        self.assertEqual(
+            t1.union(t2).union(t3).compile(),
+            'SELECT * FROM t1 UNION SELECT * FROM t2 UNION SELECT * FROM t3;')
 
 
 class TestDatabaseQuery(unittest.TestCase):
