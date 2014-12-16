@@ -8,7 +8,8 @@ class PDTable(object):
 
     # List of valid operations
     operations = (
-        '_limit', '_where', '_select', '_group', '_join', '_having', '_order'
+        '_limit', '_where', '_select', '_group', '_join', '_having', '_order',
+        '_where_exists'
     )
 
     # Binary operators.
@@ -154,6 +155,11 @@ class PDTable(object):
     def where(self, column):
         self._check_aggregate(column, 'WHERE')
         return self._set_query('_where', column)
+
+    def where_exists(self, tableB):
+        if not isinstance(tableB, PDTable):
+            raise Exception('Only tables accepted in WHERE EXISTS clause')
+        return self._set_query('_where_exists', tableB)
 
     def group(self, column):
         self._check_aggregate(column, 'GROUP BY')

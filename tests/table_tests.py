@@ -176,6 +176,31 @@ class TestTableComposition(unittest.TestCase):
             'SELECT * FROM t1 UNION SELECT * FROM t2 UNION SELECT * FROM t3;')
 
 
+class TestCompilerRewrites(unittest.TestCase):
+    def setUp(self):
+        self.t1 = PDTable("table1")
+        self.t2 = PDTable("table2")
+        self.t3 = PDTable("table3")
+
+    def test_select_star(self):
+        t = self.t1.where(self.t1.col1 > 5)
+        self.assertEqual(t.compile(),
+            'SELECT * FROM table1 WHERE ( ( table1.col1 > 5 ) );')
+
+    def test_exists_to_in(self):
+        e = PDTable("employees")
+        o = PDTable("orders")
+
+        # 11.5.3.4.1 Bad exists query
+        # Correlated subquery that is highly selective
+        # Should be rewritten to use in.
+
+        query = e.select(e.employee_id, e.first_name, e.last_name, e.salary)\
+            .where_exists(o.select(1).where(e.employee_id == o.sales_rep_id)\
+                .where(o.customer_id == 144))
+        print query.compile()
+
+
 class TestDatabaseQuery(unittest.TestCase):
     def setUp(self):
         self.connection = sqlite3.connect('tests/db.sqlite3')

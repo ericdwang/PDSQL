@@ -194,8 +194,10 @@ def compile_to_sql(ast):
                         from_list += ['ON'] + compilenode(join['cond'])
                 from_list += [')']
 
-            # WHERE
+            # WHERE and WHERE EXISTS
             where_list = ['WHERE']
+            for col in [i[1] for i in ops if i[0] == '_where_exists']:
+                where_list += ['EXISTS'] + ['('] + compilenode(col) + [')'] + ['AND']
             for col in [i[1] for i in ops if i[0] == '_where']:
                 where_list += ['('] + compilenode(col) + [')'] + ['AND']
             where_list.pop()
