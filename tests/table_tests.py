@@ -253,10 +253,9 @@ class TestQueries(unittest.TestCase):
             c.where(c.population_2010 > 2000000)
              .select(c.statecode, c.name, c.population_2010)
              .order(c.population_2010))
-        print(counties)
+        print(counties.compile())
         print('')
-        for county in counties.run():
-            print('{}|{}|{}'.format(county[0], county[1], county[2]))
+        print(counties)
 
     def test_query02(self):
         print('\nQuery 2')
@@ -264,19 +263,18 @@ class TestQueries(unittest.TestCase):
         counties = c.group(c.statecode) \
                     .select(c.statecode, c.count()) \
                     .order(c.count())
-        print(counties)
+        print(counties.compile())
         print('')
-        for county in counties.run():
-            print('{}|{}'.format(county[0], county[1]))
+        print(counties)
 
     def test_query03(self):
         print('\nQuery 3')
         c = self.counties
         nc = PDTable(c.group(c.statecode).select(('num_counties', c.count())))
         avg_num_counties = nc.select(nc.num_counties.avg())
-        print(avg_num_counties)
+        print(avg_num_counties.compile())
         print('')
-        print(avg_num_counties.run().fetchall()[0][0])
+        print(avg_num_counties)
 
     def test_query04(self):
         print('\nQuery 4')
@@ -288,9 +286,9 @@ class TestQueries(unittest.TestCase):
                       .having(c.count() > avg_nc)
                       .select(('num_states', c.statecode)))
         num_states = st.select(st.num_states.count())
-        print(num_states)
+        print(num_states.compile())
         print('')
-        print(num_states.run().fetchall()[0][0])
+        print(num_states)
 
     def test_query05(self):
         print('\nQuery 5')
@@ -300,10 +298,9 @@ class TestQueries(unittest.TestCase):
                     .select(c.population_2010.sum())
         statecodes = s.where(s.population_2010 != pop_sums) \
                       .select(s.statecode)
-        print(statecodes)
+        print(statecodes.compile())
         print('')
-        for statecode in statecodes.run():
-            print(statecode[0])
+        print(statecodes)
 
     def test_query6(self):
         # TODO: once EXISTS is implemented
@@ -319,10 +316,9 @@ class TestQueries(unittest.TestCase):
                     .where((s.statecode == 'WV')
                            & (c.population_1950 > c.population_2010)) \
                     .select(c.name, c.population_1950 - c.population_2010)
-        print(counties)
+        print(counties.compile())
         print('')
-        for county in counties.run():
-            print('{}|{}'.format(county[0], county[1]))
+        print(counties)
 
     def test_query09(self):
         print('\nQuery 9')
@@ -334,10 +330,9 @@ class TestQueries(unittest.TestCase):
         max_chairmen = nc.select(nc.num_chairmen.max()).run().fetchall()[0][0]
         statecodes = chairmen.having(se.count() == max_chairmen) \
                              .select(se.statecode)
-        print(statecodes)
+        print(statecodes.compile())
         print('')
-        for statecode in statecodes.run():
-            print(statecode[0])
+        print(statecodes)
 
     def test_query10(self):
         print('\nQuery 10')
@@ -348,10 +343,9 @@ class TestQueries(unittest.TestCase):
                              .select(se.statecode)
         statecodes = st.where(~st.statecode.in_(st_with_chairmen)) \
                        .select(st.statecode)
-        print(statecodes)
+        print(statecodes.compile())
         print('')
-        for statecode in statecodes.run():
-            print(statecode[0])
+        print(statecodes)
 
     def test_query11(self):
         print('\nQuery 11')
@@ -360,10 +354,9 @@ class TestQueries(unittest.TestCase):
         subcommittees = sc.join(pc, cond=(pc.id == sc.parent_committee)
                                 & (pc.chairman == sc.chairman)) \
                           .select(pc.id, pc.chairman, sc.id, sc.chairman)
-        print(subcommittees)
+        print(subcommittees.compile())
         print('')
-        for sub in subcommittees.run():
-            print('{}|{}|{}|{}'.format(sub[0], sub[1], sub[2], sub[3]))
+        print(subcommittees)
 
     def test_query12(self):
         print('\nQuery 12')
@@ -377,11 +370,9 @@ class TestQueries(unittest.TestCase):
                    .where(s1.born > s2.born) \
                    .select(pc.id, pc.chairman, s1.born, sc.id, sc.chairman,
                            s2.born)
-        print(values)
+        print(values.compile())
         print('')
-        for val in values.run():
-            print('{}|{}|{}|{}|{}'.format(
-                val[0], val[1], val[2], val[3], val[4]))
+        print(values)
 
     def tearDown(self):
         self.connection.close()

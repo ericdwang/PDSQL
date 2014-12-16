@@ -53,10 +53,12 @@ class PDTable(object):
 
     def __str__(self):
         """
-        Compile the query and print it.
+        Compile the query, run it, and print the results.
         """
-        self.compile()
-        return self._query
+        for result in self.run():
+            columns = [str(column) for column in result]
+            print('|'.join(columns))
+        return ''
 
     def _repr_helper(self, level=0):
         s = "\t" * level
@@ -85,7 +87,8 @@ class PDTable(object):
         """
         Returns a string representation of this table for debugging purposes.
         """
-        return str(self)
+        self.compile()
+        return self._query
 
     def __unicode__(self):
         """
@@ -110,7 +113,7 @@ class PDTable(object):
     def compile(self):
         """
         Compile the underlying query to SQL, checking first if it was already
-        compiled.
+        compiled, and return the SQL query.
         """
         if not self._compiled:
             self._query = compile_to_sql(self)
