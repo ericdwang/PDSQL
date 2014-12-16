@@ -87,6 +87,80 @@ def compile_to_sql(ast):
                 node._operation_ordering.append(
                     ('_select', [{'column': PDColumn(name='*')}]))
 
+
+    def rewrite_exists(node):
+        """
+        Rewrite EXISTS to IN when the following conditions are met:
+            * There is at least one restrictive equality condition on
+              the subquery. E.g., where(subtable.col = 123)
+            * There is an equality correlation between the queries.
+
+        This currently only rewrites the base node, and does not attempt
+        to convert multiple exists in the same query.
+        """
+        if isinstance(node, PDTable):
+            parent_name = node._name
+            ops = node._operation_ordering
+            exist_list = []
+            exist_child = None
+            exist_index = None
+
+            for idx, op in enumerate(ops):
+                if op[0] == '_where_exists':
+                    exist_list.append((idx, op[1]))
+
+            for p_idx, child in exist_list:
+                selective = False
+                correlation_pair = None
+                ops = child._operation_ordering
+                for idx, op in enumerate(ops):
+                    if op[0] == '_where':
+                        col = op[1]
+                        # Equality clauses
+                        if isinstance(col, PDColumn) and col._binary_op == '_eq':
+                            # Check for selectivity
+                            selective = (len([i for i in col._children if \
+                                    isinstance(i, PDColumn) and \
+                                    i.table._name == child._name]) > 0) and \
+                                    (len([i for i in col._children if not \
+                                    (isinstance(i, PDTable)\
+                                    or isinstance(i, PDColumn))]) > 0)
+
+                            # Check for correlation
+                            c1 = col._children[0]
+                            c2 = col._children[1]
+                            if isinstance(c1, PDColumn) and isinstance(c2, PDColumn):
+                                name1 = c1.table._name
+                                name2 = c2.table._name
+                                if name1 == parent_name and name2 == child._name:
+                                    correlation_pair = (idx, c1, c2)
+                                elif name1 == child._name and name2 == parent_name:
+                                    correlation_pair = (idx, c2, c1)
+
+                # Here, we know if a rewrite for this child is necessary
+                # if it is selective and a correlation_pair exists.
+                if selective and correlation_pair:
+                    # Remove old where clause for correlation
+                    child._operation_ordering.pop(correlation_pair[0])
+
+                    # Select the correlation.
+                    child._operation_ordering = \
+                        [i for i in child._operation_ordering if i[0] != '_select']
+                    child._operation_ordering.append(("_select",\
+                         [{'column':correlation_pair[2]}]))
+
+                    exist_child = child
+                    exist_index = p_idx
+                    # Currently only supports rewriting one.
+                    break
+
+            if exist_index and exist_child:
+                node._operation_ordering.pop(exist_index)
+                in_col = correlation_pair[1].in_(exist_child)
+                node._operation_ordering.append(('_where', in_col))
+
+        return node
+
     def strip_parens(strings):
         if strings[0] == '(' and strings[-1] == ')':
             return strings[1:-1]
@@ -125,7 +199,6 @@ def compile_to_sql(ast):
     def compilenode(node):
         node = copy.deepcopy(node)
         apply_children(node, rewrite_select)
-
         strings = []
 
         if isinstance(node, PDColumn):
@@ -267,5 +340,7 @@ def compile_to_sql(ast):
 
         return strings
 
+    ast = copy.deepcopy(ast)
+    ast = rewrite_exists(ast)
     strings = strip_parens(compilenode(ast))
     return ' '.join(strings) + ';'

@@ -178,14 +178,14 @@ class TestTableComposition(unittest.TestCase):
 
 class TestCompilerRewrites(unittest.TestCase):
     def setUp(self):
-        self.t1 = PDTable("table1")
-        self.t2 = PDTable("table2")
-        self.t3 = PDTable("table3")
+        self.t1 = PDTable("t1")
+        self.t2 = PDTable("t2")
+        self.t3 = PDTable("t3")
 
     def test_select_star(self):
         t = self.t1.where(self.t1.col1 > 5)
         self.assertEqual(t.compile(),
-            'SELECT * FROM table1 WHERE ( ( table1.col1 > 5 ) );')
+            'SELECT * FROM t1 WHERE ( ( t1.col1 > 5 ) );')
 
     def test_exists_to_in(self):
         e = PDTable("employees")
@@ -198,7 +198,24 @@ class TestCompilerRewrites(unittest.TestCase):
         query = e.select(e.employee_id, e.first_name, e.last_name, e.salary)\
             .where_exists(o.select(1).where(e.employee_id == o.sales_rep_id)\
                 .where(o.customer_id == 144))
-        print query.compile()
+        self.assertEqual(
+            query.compile(),
+            'SELECT employees.employee_id , employees.first_name , '
+            'employees.last_name , employees.salary FROM employees '
+            'WHERE ( ( employees.employee_id IN ( SELECT orders.sales_rep_id '
+            'FROM orders WHERE ( ( orders.customer_id = 144 ) ) ) ) );')
+
+        t1 = self.t1
+        t2 = self.t2
+        query = t1.select(t1.col1).where(t1.col2 > t1.col1) \
+            .where_exists(t2.where(t2.id2 == t1.id1)\
+                .where(t2.val1 == 123).where(t2.val2.in_(('a',))))
+
+        self.assertEqual(
+            query.compile(),
+            'SELECT t1.col1 FROM t1 WHERE ( ( t1.col2 > t1.col1 ) ) AND ( ( '
+            't1.id1 IN ( SELECT t2.id2 FROM t2 WHERE ( ( t2.val1 = 123 ) ) '
+            'AND ( ( t2.val2 IN ("a") ) ) ) ) );')
 
 
 class TestDatabaseQuery(unittest.TestCase):
