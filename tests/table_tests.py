@@ -327,8 +327,8 @@ class TestQueries(unittest.TestCase):
     def test_query09(self):
         print('\nQuery 9')
         se = self.senators
-        c = self.committees
-        chairmen = se.join(c, cond=c.chairman == se.name) \
+        co = self.committees
+        chairmen = se.join(co, cond=co.chairman == se.name) \
                      .group(se.statecode)
         nc = PDTable(chairmen.select(('num_chairmen', se.count())))
         max_chairmen = nc.select(nc.num_chairmen.max()).run().fetchall()[0][0]
@@ -341,12 +341,12 @@ class TestQueries(unittest.TestCase):
     def test_query10(self):
         print('\nQuery 10')
         se = self.senators
-        st = self.states
-        c = self.committees
-        st_with_chairmen = se.join(c, se.name == c.chairman) \
+        s = self.states
+        co = self.committees
+        st_with_chairmen = se.join(co, se.name == co.chairman) \
                              .select(se.statecode)
-        statecodes = st.where(~st.statecode.in_(st_with_chairmen)) \
-                       .select(st.statecode)
+        statecodes = s.where(~s.statecode.in_(st_with_chairmen)) \
+                      .select(s.statecode)
         print(statecodes.compile())
         print('')
         print(statecodes)
