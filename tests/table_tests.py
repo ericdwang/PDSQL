@@ -58,6 +58,10 @@ class TestTableComposition(unittest.TestCase):
             'SELECT t1.c FROM t1 ORDER BY t1.c DESC LIMIT 5;')
         self.assertRaises(Exception, query.limit, 'test')
         self.assertRaises(Exception, query.limit(1).limit, 2)
+        self.assertRaises(Exception, query.__getitem__, 2)
+        self.assertRaises(Exception, query.__getitem__, -2)
+        self.assertRaises(Exception, query.__getitem__, slice(2, 4))
+        self.assertRaises(Exception, query.__getitem__, slice(-4, -2))
 
     def test_reverse(self):
         query = self.t1.select(self.t1.c).order(self.t1.c)

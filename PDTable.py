@@ -261,6 +261,10 @@ class PDTable(object):
                 table_copy._reverse_val = not self._reverse_val
                 table_copy._limit = abs(key.start)
                 return table_copy
+            else:
+                raise Exception(
+                    'Getting multiple rows that are not the first or last n '
+                    'rows is not supported')
 
         else:
             raise Exception("Attempting to get column with non-string key")
