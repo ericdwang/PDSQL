@@ -92,6 +92,11 @@ def compile_to_sql(ast):
             return strings[1:-1]
         return strings
 
+    def get_table_name(node):
+        if node._alias:
+            return ['{} {}'.format(node._name, node._alias)]
+        return [node._name]
+
     def get_binary_op_strings(node):
         children = [compilenode(child) for child in node._children]
 
@@ -131,8 +136,13 @@ def compile_to_sql(ast):
             # In the case where no children, fill strings with basic
             # information about the column.
             else:
-                if hasattr(node.table, '_name') and not node._count:
-                    strings = [node.table._name + '.' + node.name]
+                if (hasattr(node.table, '_name')
+                        and not isinstance(node.table._name, PDTable)
+                        and not node._count):
+                    if node.table._alias:
+                        strings = [node.table._alias + '.' + node.name]
+                    else:
+                        strings = [node.table._name + '.' + node.name]
                 else:
                     strings = [node.name]
 
@@ -179,15 +189,17 @@ def compile_to_sql(ast):
             from_list = ['FROM']
 
             if not joins:
-                from_list += [node._name]
+                if not isinstance(node._name, PDTable):
+                    from_list += get_table_name(node)
+                else:
+                    from_list += ['('] + compilenode(node._name) + [')']
             else:
-                from_list += ['('] + [node._name]
+                from_list += ['('] + get_table_name(node)
                 for join in joins:
                     table = join['table']
                     # No operations on the table, so just use the name
                     if len(table._operation_ordering) == 0:
-                        from_list.append(
-                            'INNER JOIN {}'.format(table._name))
+                        from_list += ['INNER JOIN'] + get_table_name(table)
                     else:
                         from_list += ['INNER JOIN'] + compilenode(table)
                     if join['cond']:
