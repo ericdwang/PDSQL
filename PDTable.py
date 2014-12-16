@@ -22,15 +22,21 @@ class PDTable(object):
         '_union', '_intersect', '_except'
     )
 
-    def __init__(self, name, cursor=None):
+    def __init__(self, name, alias=None, cursor=None):
         """
         Initializes tables to be empty. Requires name, database cursor optional.
 
         If verbose is True, the compiled SQL query will be printed along with
         the results.
         """
+        # Can either be a string referencing an actual table or another
+        # PDTable referencing a subquery
         self._name = name
-        self._cursor = cursor
+        self._alias = alias
+        if isinstance(name, PDTable):
+            self._cursor = name._cursor
+        else:
+            self._cursor = cursor
 
         # List of tuples in order of operation (operation, column)
         self._operation_ordering = []
@@ -265,6 +271,7 @@ class PDTable(object):
         new_table._binary_op = copy.copy(self._binary_op)
         new_table._children = copy.copy(self._children)
         new_table._limit = copy.copy(self._limit)
+        new_table._alias = copy.copy(self._alias)
         return new_table
 
     def __nonzero__(self):

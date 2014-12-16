@@ -204,28 +204,142 @@ class TestQueries(unittest.TestCase):
         self.senators = PDTable('senators', cursor=self.cursor)
         self.committees = PDTable('committees', cursor=self.cursor)
 
-    def test_query1(self):
+    def test_query01(self):
         print('Query 1')
         c = self.counties
         counties = reversed(
-            c.select(c.statecode, c.name, c.population_2010)
-             .where(c.population_2010 > 2000000)
+            c.where(c.population_2010 > 2000000)
+             .select(c.statecode, c.name, c.population_2010)
              .order(c.population_2010))
         print(counties)
         print('')
         for county in counties.run():
             print('{}|{}|{}'.format(county[0], county[1], county[2]))
 
-    def test_query2(self):
+    def test_query02(self):
         print('\nQuery 2')
         c = self.counties
-        counties = c.select(c.statecode, c.count()) \
-                    .group(c.statecode) \
+        counties = c.group(c.statecode) \
+                    .select(c.statecode, c.count()) \
                     .order(c.count())
         print(counties)
         print('')
         for county in counties.run():
             print('{}|{}'.format(county[0], county[1]))
+
+    def test_query03(self):
+        print('\nQuery 3')
+        c = self.counties
+        nc = PDTable(c.group(c.statecode).select(('num_counties', c.count())))
+        avg_num_counties = nc.select(nc.num_counties.avg())
+        print(avg_num_counties)
+        print('')
+        print(avg_num_counties.run().fetchall()[0][0])
+
+    def test_query04(self):
+        print('\nQuery 4')
+        c = self.counties
+        nc = PDTable(c.group(c.statecode).select(('num_counties', c.count())))
+        avg_num_counties = nc.select(nc.num_counties.avg())
+        avg_nc = avg_num_counties.run().fetchall()[0][0]
+        st = PDTable(c.group(c.statecode)
+                      .having(c.count() > avg_nc)
+                      .select(('num_states', c.statecode)))
+        num_states = st.select(st.num_states.count())
+        print(num_states)
+        print('')
+        print(num_states.run().fetchall()[0][0])
+
+    def test_query05(self):
+        print('\nQuery 5')
+        c = self.counties
+        s = self.states
+        pop_sums = c.where(c.statecode == s.statecode) \
+                    .select(c.population_2010.sum())
+        statecodes = s.where(s.population_2010 != pop_sums) \
+                      .select(s.statecode)
+        print(statecodes)
+        print('')
+        for statecode in statecodes.run():
+            print(statecode[0])
+
+    def test_query6(self):
+        # TODO: once EXISTS is implemented
+        pass
+
+    # Skip query 7 because it uses strfitme which isn't implemented
+
+    def test_query08(self):
+        print('\nQuery 8')
+        c = self.counties
+        s = self.states
+        counties = c.join(s, cond=s.statecode == c.statecode) \
+                    .where((s.statecode == 'WV')
+                           & (c.population_1950 > c.population_2010)) \
+                    .select(c.name, c.population_1950 - c.population_2010)
+        print(counties)
+        print('')
+        for county in counties.run():
+            print('{}|{}'.format(county[0], county[1]))
+
+    def test_query09(self):
+        print('\nQuery 9')
+        se = self.senators
+        c = self.committees
+        chairmen = se.join(c, cond=c.chairman == se.name) \
+                     .group(se.statecode)
+        nc = PDTable(chairmen.select(('num_chairmen', se.count())))
+        max_chairmen = nc.select(nc.num_chairmen.max()).run().fetchall()[0][0]
+        statecodes = chairmen.having(se.count() == max_chairmen) \
+                             .select(se.statecode)
+        print(statecodes)
+        print('')
+        for statecode in statecodes.run():
+            print(statecode[0])
+
+    def test_query10(self):
+        print('\nQuery 10')
+        se = self.senators
+        st = self.states
+        c = self.committees
+        st_with_chairmen = se.join(c, se.name == c.chairman) \
+                             .select(se.statecode)
+        statecodes = st.where(~st.statecode.in_(st_with_chairmen)) \
+                       .select(st.statecode)
+        print(statecodes)
+        print('')
+        for statecode in statecodes.run():
+            print(statecode[0])
+
+    def test_query11(self):
+        print('\nQuery 11')
+        pc = PDTable('committees', alias='pc', cursor=self.cursor)
+        sc = PDTable('committees', alias='sc', cursor=self.cursor)
+        subcommittees = sc.join(pc, cond=(pc.id == sc.parent_committee)
+                                & (pc.chairman == sc.chairman)) \
+                          .select(pc.id, pc.chairman, sc.id, sc.chairman)
+        print(subcommittees)
+        print('')
+        for sub in subcommittees.run():
+            print('{}|{}|{}|{}'.format(sub[0], sub[1], sub[2], sub[3]))
+
+    def test_query12(self):
+        print('\nQuery 12')
+        pc = PDTable('committees', alias='pc', cursor=self.cursor)
+        sc = PDTable('committees', alias='sc', cursor=self.cursor)
+        s1 = PDTable('senators', alias='s1', cursor=self.cursor)
+        s2 = PDTable('senators', alias='s2', cursor=self.cursor)
+        values = sc.join(pc, cond=pc.id == sc.parent_committee) \
+                   .join(s1, cond=s1.name == pc.chairman) \
+                   .join(s2, cond=s2.name == sc.chairman) \
+                   .where(s1.born > s2.born) \
+                   .select(pc.id, pc.chairman, s1.born, sc.id, sc.chairman,
+                           s2.born)
+        print(values)
+        print('')
+        for val in values.run():
+            print('{}|{}|{}|{}|{}'.format(
+                val[0], val[1], val[2], val[3], val[4]))
 
     def tearDown(self):
         self.connection.close()
